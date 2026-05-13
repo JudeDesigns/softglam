@@ -1,0 +1,18 @@
+{
+  "name": "@softglow/types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript types across SoftGlow apps (will mirror API schemas).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@softglow/config": "workspace:*",
+    "typescript": "^5.6.3"
+  }
+}

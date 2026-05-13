@@ -1,0 +1,22 @@
+{
+  "name": "@softglow/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript, ESLint, and Prettier configuration for SoftGlow workspaces.",
+  "main": "index.js",
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.expo.json",
+    "tsconfig.lib.json",
+    "eslint.base.mjs"
+  ],
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.expo.json": "./tsconfig.expo.json",
+    "./tsconfig.lib.json": "./tsconfig.lib.json",
+    "./eslint": "./eslint.base.mjs"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.4.0"
+  }
+}
