@@ -45,6 +45,7 @@ export default function RootLayout() {
           <StatusBar style="dark" />
           <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
             <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="(app)" />
           </Stack>
         </SessionProvider>

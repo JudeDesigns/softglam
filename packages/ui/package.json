@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
+    "@softglow/types": "workspace:*",
     "expo-blur": "~15.0.8",
     "react": "*",
     "react-native": "0.81.5",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@softglow/config": "workspace:*",
     "@softglow/tokens": "workspace:*",
+    "@softglow/types": "workspace:*",
     "@types/react": "~19.1.17",
     "expo-blur": "~15.0.8",
     "react-native": "0.81.5",

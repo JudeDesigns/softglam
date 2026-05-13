@@ -18,3 +18,4 @@ export type { AvatarSize } from './primitives/avatar';
 export { RadialGauge } from './primitives/radial-gauge';
 export { MetricPill } from './primitives/metric-pill';
 export { ProductCard } from './primitives/product-card';
+export { SeverityIndicator } from './severity/severity-indicator';

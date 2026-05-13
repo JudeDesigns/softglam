@@ -45,7 +45,7 @@ export default function Home() {
 
   const startAssessment = () => {
     resumeOnboarding();
-    router.push('/(app)/home'); // TODO: route to onboarding once built
+    router.push('/(onboarding)/welcome');
   };
 
   return (

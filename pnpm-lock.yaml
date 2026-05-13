@@ -178,6 +178,9 @@ importers:
       '@softglow/tokens':
         specifier: workspace:*
         version: link:../tokens
+      '@softglow/types':
+        specifier: workspace:*
+        version: link:../types
       '@types/react':
         specifier: ~19.1.17
         version: 19.1.17
