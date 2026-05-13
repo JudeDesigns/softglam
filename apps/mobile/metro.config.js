@@ -17,7 +17,13 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// Disable hierarchical lookup — with hoisted pnpm we know where modules live.
-config.resolver.disableHierarchicalLookup = true;
+// Hierarchical lookup stays ON — pnpm stores transitive deps under
+// .pnpm/<pkg>@<ver>/node_modules and only walking up node_modules from the
+// importing file can find them.
+config.resolver.disableHierarchicalLookup = false;
+
+// pnpm uses symlinks heavily; Metro needs this to follow them across the
+// workspace and into the .pnpm store.
+config.resolver.unstable_enableSymlinks = true;
 
 module.exports = withNativeWind(config, { input: './global.css' });
