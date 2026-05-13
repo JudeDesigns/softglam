@@ -1,3 +1,20 @@
-// Primitives are added incrementally after the mobile app is wired
-// (GlassCard, RadialGauge, MetricPill, Button, TextField, ProductCard, ...).
-export {};
+export { Text } from './primitives/text';
+export type { TextVariant, TextTone } from './primitives/text';
+export { Screen } from './primitives/screen';
+export { Stack, Row } from './primitives/stack';
+export { Card } from './primitives/card';
+export { GlassCard } from './primitives/glass-card';
+export { Pill } from './primitives/pill';
+export { Chip } from './primitives/chip';
+export { Badge } from './primitives/badge';
+export { SectionHeader } from './primitives/section-header';
+export { Button } from './primitives/button';
+export type { ButtonVariant, ButtonSize } from './primitives/button';
+export { IconButton } from './primitives/icon-button';
+export type { IconButtonVariant, IconButtonSize } from './primitives/icon-button';
+export { ProgressBar } from './primitives/progress-bar';
+export { Avatar } from './primitives/avatar';
+export type { AvatarSize } from './primitives/avatar';
+export { RadialGauge } from './primitives/radial-gauge';
+export { MetricPill } from './primitives/metric-pill';
+export { ProductCard } from './primitives/product-card';

@@ -12,13 +12,20 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
+    "expo-blur": "~15.0.8",
     "react": "*",
-    "react-native": "*"
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-svg": "15.12.1"
   },
   "devDependencies": {
     "@softglow/config": "workspace:*",
     "@softglow/tokens": "workspace:*",
-    "@types/react": "~18.3.12",
+    "@types/react": "~19.1.17",
+    "expo-blur": "~15.0.8",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-svg": "15.12.1",
     "typescript": "^5.6.3"
   }
 }

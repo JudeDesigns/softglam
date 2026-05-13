@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { UserRole } from '@softglow/types';
+import { useSkinProfile } from './skin-profile';
 
 /**
  * Minimal in-memory session store. Replaced by real auth + secure storage later.
@@ -22,7 +23,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isAuthenticated: role !== null,
       role,
       signIn: (nextRole) => setRole(nextRole),
-      signOut: () => setRole(null),
+      signOut: () => {
+        setRole(null);
+        useSkinProfile.getState().signOutReset();
+      },
     }),
     [role],
   );
