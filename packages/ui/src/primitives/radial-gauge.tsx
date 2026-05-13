@@ -23,10 +23,10 @@ interface RadialGaugeProps extends ViewProps {
 }
 
 const gradientByTone: Record<Tone, [string, string]> = {
-  accent: ['#FFA15A', '#F77A1C'],
-  success: ['#5BC788', '#3FA66B'],
-  danger: ['#E26A60', '#D8453A'],
-  neutral: ['#A8ADB4', '#565C64'],
+  accent: ['#EBD58A', '#D4AF37'],
+  success: ['#7A9C87', '#4F7A5E'],
+  danger: ['#C26861', '#A8423A'],
+  neutral: ['#D4D4D4', '#737373'],
 };
 
 /**

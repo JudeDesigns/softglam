@@ -14,7 +14,7 @@ export const tailwindTheme = {
     black: palette.black,
     bone: palette.bone,
     ink: palette.ink,
-    flame: palette.flame,
+    gold: palette.gold,
     success: palette.success,
     warning: palette.warning,
     danger: palette.danger,

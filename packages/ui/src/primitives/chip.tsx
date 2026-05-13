@@ -19,9 +19,9 @@ export function Chip({ label, selected = false, disabled = false, ...rest }: Chi
         paddingVertical: tokens.spacing[2],
         paddingHorizontal: tokens.spacing[4],
         borderRadius: tokens.radii.pill,
-        backgroundColor: selected ? tokens.colors.accent.primary : tokens.colors.surface.solid,
+        backgroundColor: selected ? tokens.colors.text.primary : tokens.colors.surface.solid,
         borderWidth: 1,
-        borderColor: selected ? tokens.colors.accent.primary : tokens.colors.border.default,
+        borderColor: selected ? tokens.colors.text.primary : tokens.colors.border.default,
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       })}
     >

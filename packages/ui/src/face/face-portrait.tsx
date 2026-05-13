@@ -49,8 +49,8 @@ export function FacePortrait({ width = 280, children, onTap, style, ...rest }: F
       <Svg width={width} height={height} viewBox="0 0 240 320">
         <Defs>
           <LinearGradient id="faceFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#FBF9F6" />
-            <Stop offset="1" stopColor="#ECE7E0" />
+            <Stop offset="0" stopColor="#FAFAF9" />
+            <Stop offset="1" stopColor="#E7E5E4" />
           </LinearGradient>
         </Defs>
         {/* Head oval */}
@@ -71,20 +71,20 @@ export function FacePortrait({ width = 280, children, onTap, style, ...rest }: F
           fill="none"
         />
         {/* Brows */}
-        <Path d="M 70 140 Q 90 132 108 140" stroke="#3D424A" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <Path d="M 132 140 Q 150 132 170 140" stroke="#3D424A" strokeWidth="2" fill="none" strokeLinecap="round" />
+        <Path d="M 70 140 Q 90 132 108 140" stroke="#404040" strokeWidth="2" fill="none" strokeLinecap="round" />
+        <Path d="M 132 140 Q 150 132 170 140" stroke="#404040" strokeWidth="2" fill="none" strokeLinecap="round" />
         {/* Eyes */}
-        <G fill="#3D424A">
+        <G fill="#404040">
           <Ellipse cx="89" cy="162" rx="6" ry="3" />
           <Ellipse cx="151" cy="162" rx="6" ry="3" />
         </G>
         {/* Nose */}
         <Path d="M 120 168 Q 116 200 126 214 Q 122 220 116 218" stroke={tokens.colors.border.strong} strokeWidth="1.2" fill="none" />
         {/* Mouth */}
-        <Path d="M 100 248 Q 120 258 140 248" stroke="#3D424A" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        <Path d="M 100 248 Q 120 258 140 248" stroke="#404040" strokeWidth="1.6" fill="none" strokeLinecap="round" />
         {/* Cheek hint circles (very subtle) */}
-        <Circle cx="76" cy="200" r="14" fill="rgba(247, 122, 28, 0.05)" />
-        <Circle cx="164" cy="200" r="14" fill="rgba(247, 122, 28, 0.05)" />
+        <Circle cx="76" cy="200" r="14" fill="rgba(212, 175, 55, 0.06)" />
+        <Circle cx="164" cy="200" r="14" fill="rgba(212, 175, 55, 0.06)" />
       </Svg>
       {children}
     </View>

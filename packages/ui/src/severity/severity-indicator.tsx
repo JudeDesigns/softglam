@@ -160,8 +160,8 @@ function SensitivityOverlay({ level }: { level: SeverityLevel }) {
     <>
       <Defs>
         <RadialGradient id="sensGrad" cx="50%" cy="50%" r="55%">
-          <Stop offset="0%" stopColor="#F77A1C" stopOpacity={opacity} />
-          <Stop offset="100%" stopColor="#F77A1C" stopOpacity="0" />
+          <Stop offset="0%" stopColor="#A8423A" stopOpacity={opacity} />
+          <Stop offset="100%" stopColor="#A8423A" stopOpacity="0" />
         </RadialGradient>
       </Defs>
       <Rect x="0" y="0" width="100" height="100" fill="url(#sensGrad)" />

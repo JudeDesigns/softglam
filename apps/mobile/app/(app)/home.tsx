@@ -82,7 +82,7 @@ export default function Home() {
           caption={profile ? 'Curated from your top concerns' : 'Trending in the SoftGlow shop'}
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Row gap={tokens.spacing[3]} style={{ paddingRight: tokens.spacing[4] }}>
+          <Row align="start" gap={tokens.spacing[3]} style={{ paddingRight: tokens.spacing[4] }}>
             {recommended.slice(0, 6).map((p) => (
               <ProductCard
                 key={p.id}

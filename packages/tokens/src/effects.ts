@@ -41,11 +41,18 @@ export const shadow = {
     elevation: 10,
   },
   hero: {
-    shadowColor: '#F77A1C',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.28,
-    shadowRadius: 40,
+    shadowOpacity: 0.22,
+    shadowRadius: 36,
     elevation: 14,
+  },
+  floating: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.10,
+    shadowRadius: 24,
+    elevation: 12,
   },
 } as const;
 

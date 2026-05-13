@@ -36,7 +36,6 @@ export function Screen({
 
   const innerStyle: ViewStyle = {
     padding,
-    paddingBottom: padding + tokens.spacing[16],
     ...contentStyle,
   };
 

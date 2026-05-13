@@ -38,8 +38,8 @@ interface VariantPalette {
 
 const variantPalettes: Record<ButtonVariant, VariantPalette> = {
   primary: {
-    bg: tokens.colors.accent.primary,
-    bgPressed: tokens.colors.accent.primaryPressed,
+    bg: tokens.colors.text.primary,
+    bgPressed: tokens.palette.ink[800],
     fg: 'onHero',
     spinner: tokens.colors.text.onHero,
   },
@@ -58,16 +58,15 @@ const variantPalettes: Record<ButtonVariant, VariantPalette> = {
   },
   destructive: {
     bg: tokens.colors.state.danger,
-    bgPressed: '#B5382F',
+    bgPressed: '#8A352E',
     fg: 'onHero',
     spinner: tokens.colors.text.onHero,
   },
   onHero: {
-    bg: 'rgba(255, 255, 255, 0.18)',
-    bgPressed: 'rgba(255, 255, 255, 0.28)',
-    fg: 'onHero',
-    border: 'rgba(255, 255, 255, 0.32)',
-    spinner: tokens.colors.text.onHero,
+    bg: tokens.colors.accent.primary,
+    bgPressed: tokens.colors.accent.primaryPressed,
+    fg: 'primary',
+    spinner: tokens.colors.text.primary,
   },
 };
 
