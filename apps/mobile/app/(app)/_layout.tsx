@@ -1,158 +1,154 @@
-import { Platform, StyleSheet, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { tokens } from '@softglow/tokens';
 import { useSession } from '@/state/session';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
+interface TabMeta { label: string; icon: IoniconName }
+
+const TAB_META: Record<string, TabMeta> = {
+  home:        { label: 'Home',     icon: 'sparkles' },
+  'look-share':{ label: 'Looks',    icon: 'color-palette' },
+  requests:    { label: 'Requests', icon: 'paper-plane' },
+  inbox:       { label: 'Inbox',    icon: 'mail' },
+  invite:      { label: 'Invite',   icon: 'person-add' },
+  shop:        { label: 'Shop',     icon: 'bag-handle' },
+  profile:     { label: 'Me',       icon: 'person-circle' },
+};
+
+/** Tabs shown per role, in display order. */
+const TABS_BY_ROLE = {
+  client: ['home', 'look-share', 'requests', 'shop', 'profile'] as const,
+  artist: ['home', 'inbox', 'shop', 'invite', 'profile'] as const,
+} as const;
+
 const SIDE_MARGIN = 16;
 const TOP_GAP = 12;
-const CAPSULE_HEIGHT = 64;
-const CAPSULE_RADIUS = 28;
+const BAR_HEIGHT = 72;
+const BAR_RADIUS = 36;
+const INNER_PAD = 6;
+const ITEM_RADIUS = 26;
 
-/**
- * Inner capsule painted behind the tab items. Positioned with the same insets
- * (top: TOP_GAP, bottom: safeAreaBottom, left/right: SIDE_MARGIN) used as
- * paddings on the outer tabBarStyle, so the visible capsule and the item row
- * align exactly. The outer tab bar block itself remains transparent and only
- * exists to reserve vertical space in the layout — content can no longer
- * scroll behind the navigation.
- */
-function Capsule({ bottomInset }: { bottomInset: number }) {
-  const frame = {
-    position: 'absolute' as const,
-    top: TOP_GAP,
-    left: SIDE_MARGIN,
-    right: SIDE_MARGIN,
-    bottom: bottomInset,
-    borderRadius: CAPSULE_RADIUS,
-    overflow: 'hidden' as const,
-    borderWidth: 1,
-    borderColor: tokens.colors.border.subtle,
-    ...tokens.shadow.floating,
-  };
+function CustomTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps & { role?: string }) {
+  const { role } = useSession();
+  const visibleTabs = TABS_BY_ROLE[role === 'artist' ? 'artist' : 'client'] as readonly string[];
 
-  if (Platform.OS === 'ios') {
-    return (
-      <View style={frame}>
-        <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.55)' }]} />
-      </View>
-    );
+  const current = state.routes[state.index]!;
+  const currentOpts = descriptors[current.key]!.options;
+  if ((currentOpts.tabBarStyle as { display?: string } | undefined)?.display === 'none') {
+    return null;
   }
-  return (
-    <View style={[frame, { backgroundColor: tokens.colors.surface.solid }]} />
-  );
-}
 
-function TabIcon({ name, color, focused }: { name: IoniconName; color: string; focused: boolean }) {
+  const bottomInset = Math.max(insets.bottom, 12);
+
   return (
     <View
       style={{
-        minWidth: 56,
-        height: 28,
-        paddingHorizontal: 14,
-        borderRadius: 14,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: focused ? tokens.colors.accent.primarySoft : 'transparent',
+        paddingTop: TOP_GAP,
+        paddingBottom: bottomInset,
+        paddingHorizontal: SIDE_MARGIN,
+        backgroundColor: 'transparent',
       }}
     >
-      <Ionicons name={name} size={20} color={focused ? tokens.colors.accent.primaryPressed : color} />
+      <View
+        style={{
+          flexDirection: 'row',
+          height: BAR_HEIGHT,
+          borderRadius: BAR_RADIUS,
+          padding: INNER_PAD,
+          backgroundColor: '#FAF6F1',
+          borderWidth: 1,
+          borderColor: '#E4D9CD',
+          ...tokens.shadow.floating,
+        }}
+      >
+        {state.routes.map((route, index) => {
+          const meta = TAB_META[route.name];
+          // Only render tabs that belong to this role
+          if (!meta || !visibleTabs.includes(route.name)) return null;
+          const focused = state.index === index;
+          const onPress = () => {
+            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
+          const onLongPress = () => {
+            navigation.emit({ type: 'tabLongPress', target: route.key });
+          };
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              accessibilityLabel={meta.label}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={{ flex: 1 }}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  borderRadius: ITEM_RADIUS,
+                  backgroundColor: focused ? '#FFFFFF' : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4,
+                  ...(focused ? tokens.shadow.sm : null),
+                }}
+              >
+                <Ionicons
+                  name={meta.icon}
+                  size={22}
+                  color={focused ? '#C97B6A' : '#BDA898'}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontFamily: focused ? tokens.fontFamily.sansSemibold : tokens.fontFamily.sansMedium,
+                    fontSize: 11,
+                    letterSpacing: 0.1,
+                    color: focused ? '#C97B6A' : '#BDA898',
+                  }}
+                >
+                  {meta.label}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 export default function AppLayout() {
-  const { isAuthenticated } = useSession();
-  const insets = useSafeAreaInsets();
+  const { isAuthenticated, role } = useSession();
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
-  const bottomInset = Math.max(insets.bottom, 12);
-  // Outer block reserves vertical space: top gap + capsule + bottom safe area.
-  const outerHeight = TOP_GAP + CAPSULE_HEIGHT + bottomInset;
-
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: tokens.colors.accent.primaryPressed,
-        tabBarInactiveTintColor: tokens.colors.text.tertiary,
-        tabBarShowLabel: true,
-        tabBarLabelPosition: 'below-icon',
-        tabBarBackground: () => <Capsule bottomInset={bottomInset} />,
-        tabBarItemStyle: {
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingVertical: 0,
-          paddingHorizontal: 0,
-        },
-        tabBarIconStyle: {
-          alignSelf: 'center',
-          marginTop: 0,
-          marginBottom: 2,
-        },
-        tabBarStyle: {
-          // Outer layout block — non-absolute, so it reserves space and
-          // content above scrolls naturally without sliding under the bar.
-          height: outerHeight,
-          paddingTop: TOP_GAP + 8,
-          paddingBottom: bottomInset + 8,
-          paddingHorizontal: SIDE_MARGIN + 8,
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
-          elevation: 0,
-        },
-        tabBarLabelStyle: {
-          fontFamily: tokens.fontFamily.sansMedium,
-          fontSize: 10,
-          letterSpacing: 0.2,
-          textAlign: 'center',
-          marginTop: 0,
-        },
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => <TabIcon name="sparkles" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="try-on"
-        options={{
-          title: 'Try-On',
-          tabBarIcon: ({ color, focused }) => <TabIcon name="happy" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="scan"
-        options={{
-          title: 'Scan',
-          tabBarIcon: ({ color, focused }) => <TabIcon name="scan-circle" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="shop"
-        options={{
-          title: 'Shop',
-          tabBarIcon: ({ color, focused }) => <TabIcon name="bag-handle" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, focused }) => <TabIcon name="person-circle" color={color} focused={focused} />,
-        }}
-      />
+      <Tabs.Screen name="home"       options={{ title: 'Home' }} />
+      <Tabs.Screen name="look-share" options={{ title: 'Looks',    href: role === 'artist' ? null : undefined }} />
+      <Tabs.Screen name="requests"   options={{ title: 'Requests', href: role === 'artist' ? null : undefined }} />
+      <Tabs.Screen name="inbox"      options={{ title: 'Inbox',    href: role === 'client' ? null : undefined }} />
+      <Tabs.Screen name="invite"     options={{ title: 'Invite',   href: role === 'client' ? null : undefined }} />
+      <Tabs.Screen name="shop"       options={{ title: 'Shop' }} />
+      <Tabs.Screen name="profile"    options={{ title: 'Profile' }} />
+      <Tabs.Screen name="try-on"     options={{ href: null }} />
+      <Tabs.Screen name="scan"       options={{ href: null }} />
+      <Tabs.Screen name="look/[id]"            options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="look-share/[id]"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="inbox/[requestId]"    options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="requests/[requestId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }

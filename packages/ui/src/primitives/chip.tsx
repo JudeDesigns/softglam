@@ -14,18 +14,24 @@ export function Chip({ label, selected = false, disabled = false, ...rest }: Chi
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
+      android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
       {...rest}
       style={({ pressed }) => ({
         paddingVertical: tokens.spacing[2],
         paddingHorizontal: tokens.spacing[4],
+        minHeight: 44,
         borderRadius: tokens.radii.pill,
-        backgroundColor: selected ? tokens.colors.text.primary : tokens.colors.surface.solid,
+        backgroundColor: selected ? tokens.colors.accent.primary : tokens.colors.surface.solid,
         borderWidth: 1,
-        borderColor: selected ? tokens.colors.text.primary : tokens.colors.border.default,
+        borderColor: selected ? tokens.colors.accent.primary : tokens.colors.border.default,
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       })}
     >
-      <Text variant="label" tone={selected ? 'onHero' : 'secondary'}>
+      <Text
+        variant="label"
+        tone={selected ? 'primary' : 'secondary'}
+        weight={selected ? 'semibold' : 'medium'}
+      >
         {label}
       </Text>
     </Pressable>

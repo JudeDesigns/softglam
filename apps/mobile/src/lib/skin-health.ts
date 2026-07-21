@@ -17,7 +17,7 @@ export const BAND_COPY: Record<HealthBand, { caption: string; headline: string }
 };
 
 export function summarizeProfile(profile: SkinProfile | null): string {
-  if (!profile) return 'Take a 2-minute self-assessment to see your score.';
+  if (!profile) return 'Take a 2-minute check-in to see your score.';
   const { caption } = BAND_COPY[bandForScore(profile.healthScore)];
   return caption;
 }

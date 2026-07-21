@@ -86,7 +86,7 @@ export function MetricPill({
           />
         </Svg>
         {icon ?? (
-          <Text variant="label" weight="semibold" style={{ color }}>
+          <Text variant="label" weight="semibold" tone="primary">
             {displayValue ?? `${Math.round(clamped)}%`}
           </Text>
         )}

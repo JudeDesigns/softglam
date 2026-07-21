@@ -7,9 +7,8 @@ import { Screen, Stack, Text } from '@softglow/ui';
 import { useSkinProfile } from '@/state/skin-profile';
 
 /**
- * Brief intermission so the score transition doesn't feel instant. The commit
- * itself is synchronous; we wait ~1.4s for the animation/perception beat and
- * then route to the result screen.
+ * Brief intermission so the score transition doesn't feel instant. commitDraft
+ * now syncs to the API; we wait for it and then route to the result screen.
  */
 const DELAY_MS = 1400;
 
@@ -17,15 +16,25 @@ export default function CalculatingStep() {
   const commitDraft = useSkinProfile((s) => s.commitDraft);
 
   useEffect(() => {
-    const committed = commitDraft();
-    if (!committed) {
-      router.replace('/(onboarding)/tone');
-      return;
-    }
-    const id = setTimeout(() => {
-      router.replace('/(onboarding)/result');
-    }, DELAY_MS);
-    return () => clearTimeout(id);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    (async () => {
+      const committed = await commitDraft();
+      if (cancelled) return;
+      if (!committed) {
+        router.replace('/(onboarding)/tone');
+        return;
+      }
+      timer = setTimeout(() => {
+        router.replace('/(onboarding)/result');
+      }, DELAY_MS);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [commitDraft]);
 
   return (
@@ -35,7 +44,7 @@ export default function CalculatingStep() {
         <Stack gap={tokens.spacing[2]} align="center">
           <Text variant="titleSm" align="center">Reading your skin</Text>
           <Text variant="bodySm" tone="secondary" align="center">
-            Weighing your concerns against the SQS framework…
+            Weighing your concerns and shaping your score…
           </Text>
         </Stack>
       </View>

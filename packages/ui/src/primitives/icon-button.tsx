@@ -13,8 +13,8 @@ interface IconButtonProps extends Omit<PressableProps, 'children' | 'style'> {
 }
 
 const sizeMap: Record<IconButtonSize, number> = {
-  sm: 32,
-  md: 40,
+  sm: 44,
+  md: 44,
   lg: 48,
 };
 
@@ -64,6 +64,7 @@ export function IconButton({
       accessibilityState={{ disabled: isDisabled }}
       disabled={isDisabled}
       hitSlop={8}
+      android_ripple={{ color: 'rgba(0,0,0,0.08)', borderless: true }}
       {...rest}
       style={({ pressed }) => {
         const base: ViewStyle = {

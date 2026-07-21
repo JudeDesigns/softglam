@@ -51,7 +51,7 @@ export default function TypeStep() {
                 padding: tokens.spacing[5],
                 borderRadius: tokens.radii.xl,
                 borderWidth: 2,
-                borderColor: selected ? tokens.colors.accent.primary : tokens.colors.border.subtle,
+                borderColor: selected ? tokens.colors.accent.primary : tokens.colors.border.strong,
                 backgroundColor: selected
                   ? tokens.colors.accent.primarySoft
                   : tokens.colors.surface.solid,

@@ -11,7 +11,10 @@ interface ProductCardProps extends Omit<PressableProps, 'children' | 'style'> {
   price: string;
   image?: ImageSourcePropType;
   badge?: { label: string; tone?: 'accent' | 'success' | 'warning' | 'info' };
+  /** Fixed pixel width — use for horizontal carousels. Ignored when `fluid`. */
   width?: number;
+  /** Fill the parent container (use for 2-column grid wrappers). */
+  fluid?: boolean;
   variant?: 'tile' | 'row';
 }
 
@@ -59,6 +62,7 @@ export function ProductCard({
   image,
   badge,
   width = 168,
+  fluid = false,
   variant = 'tile',
   ...rest
 }: ProductCardProps) {
@@ -66,6 +70,7 @@ export function ProductCard({
     return (
       <Pressable
         accessibilityRole="button"
+        android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
         {...rest}
         style={({ pressed }) => ({
           flexDirection: 'row',
@@ -108,15 +113,19 @@ export function ProductCard({
   }
 
   const innerPad = tokens.spacing[3];
-  const imageHeight = Math.round(width * 0.88);
-  const imageSize = width - innerPad * 2;
+  // In fluid mode the card fills its parent; image uses aspectRatio so it
+  // scales without needing a numeric width. In fixed mode we keep numeric
+  // height for pixel-perfect carousels.
+  const imageHeight = fluid ? undefined : Math.round(width * 0.88);
+  const imageSize = fluid ? 200 : width - innerPad * 2;
 
   return (
     <Pressable
       accessibilityRole="button"
+      android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
       {...rest}
       style={({ pressed }) => ({
-        width,
+        ...(fluid ? { alignSelf: 'stretch' as const } : { width }),
         borderRadius: tokens.radii.xl,
         backgroundColor: tokens.colors.surface.solid,
         borderWidth: 1,
@@ -129,7 +138,7 @@ export function ProductCard({
     >
       <View
         style={{
-          height: imageHeight,
+          ...(fluid ? { aspectRatio: 1 } : { height: imageHeight }),
           borderRadius: tokens.radii.lg,
           backgroundColor: tokens.colors.background.sunken,
           overflow: 'hidden',

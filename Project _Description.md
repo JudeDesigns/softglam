@@ -1,12 +1,6 @@
-Here is the candid truth about the architecture: **I strongly recommend against a full Microservices Architecture for this stage of your product.** For a $7,500 MVP, orchestrating 10+ microservices introduces massive operational overhead, complex debugging, and unnecessary cloud costs. The industry standard for an early-stage product in 2026 is a **Modular Monolith**. This means you build a single, highly organized FastAPI backend where domains (Users, AI Try-On, E-commerce, Booking) are separated into strict modules. It gives you the speed and cost-efficiency of a monolith now, but allows you to easily break it apart into microservices later when your user base actually demands independent scaling.
 
-As for the **E-commerce feature**: Yes, the foundation is absolutely there. The UI designs feature "Smart Shopping" and "Beauty Products For You." To make it fully functional for your coder, I have explicitly added `products`, `orders`, and `cart` schemas to the database structure below.
 
-Here is the complete, tailored prompt document. You can copy and paste this directly into Cursor, GitHub Copilot, or whichever AI coding assistant you are using.
-
----
-
-# System Architecture & Development Prompt: Face Blueprint Pro (GlowMap)
+# System Architecture & Development Prompt: __name to be determined__
 
 ## 1. Project Context & Goals
 

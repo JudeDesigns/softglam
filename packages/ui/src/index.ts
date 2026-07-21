@@ -22,3 +22,4 @@ export { SeverityIndicator } from './severity/severity-indicator';
 export { FacePortrait, classifyZone, ZONE_LABELS } from './face/face-portrait';
 export type { FaceZoneName } from './face/face-portrait';
 export { FacePin } from './face/face-pin';
+export { MirrorFrame } from './primitives/mirror-frame';

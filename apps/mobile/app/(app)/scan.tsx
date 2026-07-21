@@ -8,6 +8,7 @@ import {
   Card,
   FacePin,
   FacePortrait,
+  IconButton,
   Row,
   Screen,
   SectionHeader,
@@ -87,17 +88,72 @@ export default function Scan() {
     setPending(null);
   };
 
+  const topConcern = useMemo<{ concern: SkinConcern; n: number } | null>(() => {
+    const counts = new Map<SkinConcern, number>();
+    for (const t of tags) for (const c of t.concerns) counts.set(c, (counts.get(c) ?? 0) + 1);
+    let best: { concern: SkinConcern; n: number } | null = null;
+    counts.forEach((n, concern) => {
+      if (best === null || n > best.n) best = { concern, n };
+    });
+    return best;
+  }, [tags]);
+
   return (
     <Screen>
-      <Stack gap={tokens.spacing[2]} style={{ marginBottom: tokens.spacing[5] }}>
-        <Badge label="Smart Reticle" tone="accent" />
-        <Text variant="titleSm">Tap exactly where it sits</Text>
-        <Text variant="bodySm" tone="secondary">
-          Drop a tag on the spot — forehead, cheek, jaw — and tell SoftGlow what&apos;s happening there.
-        </Text>
-      </Stack>
+      <Row justify="between" align="center" style={{ marginBottom: tokens.spacing[5] }}>
+        <Stack gap={4}>
+          <Text variant="caption" tone="tertiary" weight="medium">SMART RETICLE</Text>
+          <Text variant="titleSm">Tag your face</Text>
+        </Stack>
+        <IconButton
+          icon={<Ionicons name="camera-outline" size={20} color={tokens.colors.text.primary} />}
+          accessibilityLabel="AI snap"
+        />
+      </Row>
 
-      <Card padding={tokens.spacing[4]} elevation="sm">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Use AI snap to auto-tag from a selfie"
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: tokens.spacing[3],
+          padding: tokens.spacing[4],
+          borderRadius: tokens.radii.lg,
+          backgroundColor: tokens.colors.accent.primarySoft,
+          borderWidth: 1,
+          borderColor: 'rgba(212, 175, 55, 0.30)',
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: 'rgba(212, 175, 55, 0.22)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="sparkles" size={18} color={tokens.colors.accent.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="caption" tone="tertiary" weight="medium">AI ASSIST · BETA</Text>
+          <Text variant="bodySm" weight="semibold" style={{ marginTop: 2 }}>
+            Auto-tag from a selfie
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={tokens.colors.text.primary} />
+      </Pressable>
+
+      <Card padding={tokens.spacing[4]} elevation="sm" style={{ marginTop: tokens.spacing[5] }}>
+        <Stack gap={tokens.spacing[2]} style={{ marginBottom: tokens.spacing[3] }}>
+          <Badge label="Tap exactly where it sits" tone="accent" />
+          <Text variant="caption" tone="tertiary">
+            Drop a tag on the spot — forehead, cheek, jaw — and tell us what's happening there.
+          </Text>
+        </Stack>
         <FacePortrait width={260} onTap={handleTapFace}>
           {tags.map((tag) => (
             <FacePin
@@ -119,13 +175,42 @@ export default function Scan() {
         </Text>
       </Card>
 
+      {tags.length > 0 ? (
+        <Card padding={tokens.spacing[4]} elevation="sm" style={{ marginTop: tokens.spacing[4] }}>
+          <Row gap={tokens.spacing[5]} align="center">
+            <SummaryStat label="Tags" value={String(tags.length)} />
+            <View style={{ width: 1, height: 32, backgroundColor: tokens.colors.border.subtle }} />
+            <SummaryStat label="Zones" value={String(grouped.length)} />
+            <View style={{ width: 1, height: 32, backgroundColor: tokens.colors.border.subtle }} />
+            <SummaryStat
+              label="Top concern"
+              value={topConcern ? CONCERN_LABELS[topConcern.concern] : '—'}
+            />
+          </Row>
+        </Card>
+      ) : null}
+
       <View style={{ marginTop: tokens.spacing[6] }}>
         <SectionHeader title="Tagged zones" caption="Tap a row to edit or remove" />
         {grouped.length === 0 ? (
           <Card padding={tokens.spacing[5]} elevation="sm">
-            <Text variant="bodySm" tone="secondary">
-              No tags yet. Add one to refine your Skin Health Score.
-            </Text>
+            <Stack align="center" gap={tokens.spacing[2]}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: tokens.colors.background.sunken,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="locate-outline" size={22} color={tokens.colors.text.tertiary} />
+              </View>
+              <Text variant="bodySm" tone="secondary" align="center">
+                No tags yet. Add one to refine your Skin Health Score.
+              </Text>
+            </Stack>
           </Card>
         ) : (
           <Stack gap={tokens.spacing[3]}>
@@ -177,3 +262,17 @@ export default function Scan() {
     </Screen>
   );
 }
+
+function SummaryStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text variant="caption" tone="tertiary" weight="medium" numberOfLines={1}>
+        {label.toUpperCase()}
+      </Text>
+      <Text variant="bodySm" weight="semibold" numberOfLines={1} style={{ marginTop: 2 }}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+

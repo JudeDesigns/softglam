@@ -12,7 +12,7 @@ const BULLETS: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Get a score grounded in research',
-    body: 'Aggregated against the Skin Quality Assessment Scale (SQS, 2024).',
+    body: 'Mapped to dermatology-led research on skin health.',
   },
   {
     title: 'See products matched to your concerns',
@@ -39,8 +39,8 @@ export default function Welcome() {
         <Badge label="2 minutes" tone="accent" />
         <Text variant="title">Let&apos;s read your skin</Text>
         <Text variant="body" tone="secondary">
-          A quick self-assessment so SoftGlow can show you what actually matters
-          for your skin today.
+          A quick guided check-in so Softglow can show you what actually
+          matters for your skin today.
         </Text>
       </Stack>
 
@@ -74,7 +74,7 @@ export default function Welcome() {
       </View>
 
       <View style={{ marginTop: tokens.spacing[8], gap: tokens.spacing[3] }}>
-        <Button label="Begin assessment" variant="primary" fullWidth onPress={handleStart} />
+        <Button label="Begin check-in" variant="primary" fullWidth onPress={handleStart} />
         <Button label="Skip for now" variant="ghost" fullWidth onPress={handleSkip} />
       </View>
     </Screen>

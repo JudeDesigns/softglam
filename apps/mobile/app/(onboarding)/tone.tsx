@@ -61,15 +61,15 @@ export default function ToneStep() {
                   borderRadius: 44,
                   backgroundColor: s.color,
                   borderWidth: 3,
-                  borderColor: selected ? tokens.colors.accent.primary : tokens.colors.border.subtle,
+                  borderColor: selected ? tokens.colors.accent.primary : tokens.colors.border.strong,
                   ...tokens.shadow.sm,
                 }}
               />
               <Stack gap={tokens.spacing[1]} align="center" style={{ marginTop: tokens.spacing[2] }}>
-                <Text variant="label" tone={selected ? 'accent' : 'secondary'} weight="semibold">
+                <Text variant="label" tone={selected ? 'accent' : 'primary'} weight="semibold">
                   {s.label}
                 </Text>
-                <Text variant="caption" tone="tertiary">
+                <Text variant="caption" tone="secondary">
                   Tier {s.tier}
                 </Text>
               </Stack>

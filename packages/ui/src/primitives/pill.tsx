@@ -15,11 +15,11 @@ interface PillProps extends ViewProps {
 
 const bgMap: Record<Tone, string> = {
   neutral: tokens.colors.background.sunken,
-  accent: tokens.colors.accent.primarySoft,
-  success: 'rgba(63, 166, 107, 0.14)',
-  warning: 'rgba(224, 168, 46, 0.16)',
-  danger: 'rgba(216, 69, 58, 0.14)',
-  onHero: 'rgba(255, 255, 255, 0.18)',
+  accent:  tokens.colors.accent.primarySoft,
+  success: 'rgba(138, 154, 126, 0.16)',
+  warning: 'rgba(232, 199, 154, 0.25)',
+  danger:  'rgba(168, 66, 58, 0.14)',
+  onHero:  'rgba(255, 255, 255, 0.18)',
 };
 
 const fgMap: Record<Tone, 'primary' | 'accent' | 'onHero' | 'secondary'> = {

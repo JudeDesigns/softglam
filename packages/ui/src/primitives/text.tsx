@@ -11,7 +11,14 @@ export type TextVariant =
   | 'label'
   | 'caption';
 
-export type TextTone = 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'accent' | 'onHero';
+export type TextTone =
+  | 'primary'
+  | 'secondary'
+  | 'tertiary'
+  | 'inverse'
+  | 'accent'
+  | 'accentOnHero'
+  | 'onHero';
 
 interface TextProps extends RNTextProps {
   variant?: TextVariant;
@@ -68,12 +75,13 @@ const variantStyles: Record<TextVariant, TextStyle> = {
 };
 
 const toneColors: Record<TextTone, string> = {
-  primary: tokens.colors.text.primary,
-  secondary: tokens.colors.text.secondary,
-  tertiary: tokens.colors.text.tertiary,
-  inverse: tokens.colors.text.inverse,
-  accent: tokens.colors.text.accent,
-  onHero: tokens.colors.text.onHero,
+  primary:      tokens.colors.text.primary,
+  secondary:    tokens.colors.text.secondary,
+  tertiary:     tokens.colors.text.tertiary,
+  inverse:      tokens.colors.text.inverse,
+  accent:       tokens.colors.accent.primary,
+  accentOnHero: tokens.colors.text.accentOnHero,
+  onHero:       tokens.colors.text.onHero,
 };
 
 const weightFamilies: Record<NonNullable<TextProps['weight']>, string> = {

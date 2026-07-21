@@ -38,8 +38,8 @@ interface VariantPalette {
 
 const variantPalettes: Record<ButtonVariant, VariantPalette> = {
   primary: {
-    bg: tokens.colors.text.primary,
-    bgPressed: tokens.palette.ink[800],
+    bg: tokens.colors.accent.primary,
+    bgPressed: tokens.colors.accent.primaryPressed,
     fg: 'onHero',
     spinner: tokens.colors.text.onHero,
   },
@@ -84,45 +84,55 @@ export function Button({
   const sizing = sizeMap[size];
   const palette = variantPalettes[variant];
 
+  // Visual styles live on the inner View so the background always paints
+  // even when the React Compiler hoists the Pressable's children/style. The
+  // Pressable just owns layout (stretch when fullWidth) and disabled opacity.
+  const outerStyle: ViewStyle = {
+    alignSelf: fullWidth ? 'stretch' : 'flex-start',
+    opacity: disabled ? 0.65 : 1,
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
+      android_ripple={{ color: 'rgba(0,0,0,0.10)' }}
       {...rest}
-      style={({ pressed }) => {
-        const base: ViewStyle = {
-          paddingVertical: sizing.paddingVertical,
-          paddingHorizontal: sizing.paddingHorizontal,
-          minHeight: sizing.minHeight,
-          borderRadius: tokens.radii.pill,
-          backgroundColor: pressed ? palette.bgPressed : palette.bg,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: sizing.gap,
-          opacity: disabled ? 0.5 : 1,
-          alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          ...(palette.border ? { borderWidth: 1, borderColor: palette.border } : null),
-          ...(variant === 'primary' && !disabled ? tokens.shadow.sm : null),
-        };
-        return base;
-      }}
+      style={outerStyle}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={palette.spinner} />
-      ) : (
-        <>
-          {leadingIcon ? <View>{leadingIcon}</View> : null}
-          <Text
-            variant={size === 'lg' ? 'heading' : 'label'}
-            tone={palette.fg}
-            weight="semibold"
-          >
-            {label}
-          </Text>
-          {trailingIcon ? <View>{trailingIcon}</View> : null}
-        </>
+      {({ pressed }) => (
+        <View
+          style={{
+            paddingVertical: sizing.paddingVertical,
+            paddingHorizontal: sizing.paddingHorizontal,
+            minHeight: sizing.minHeight,
+            borderRadius: tokens.radii.pill,
+            backgroundColor: pressed ? palette.bgPressed : palette.bg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: sizing.gap,
+            ...(palette.border ? { borderWidth: 1, borderColor: palette.border } : null),
+            ...(variant === 'primary' && !disabled ? tokens.shadow.sm : null),
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={palette.spinner} />
+          ) : (
+            <>
+              {leadingIcon ? <View>{leadingIcon}</View> : null}
+              <Text
+                variant={size === 'lg' ? 'heading' : 'label'}
+                tone={palette.fg}
+                weight="semibold"
+              >
+                {label}
+              </Text>
+              {trailingIcon ? <View>{trailingIcon}</View> : null}
+            </>
+          )}
+        </View>
       )}
     </Pressable>
   );

@@ -40,9 +40,11 @@ export function Screen({
   };
 
   if (!scroll) {
+    // flex: 1 so descendants that rely on flex (e.g. a quiz frame pushing its
+    // footer button to the bottom) actually get a flex parent to grow into.
     return (
       <SafeAreaView edges={edges} style={containerStyle}>
-        <View style={innerStyle}>{children}</View>
+        <View style={[{ flex: 1 }, innerStyle]}>{children}</View>
       </SafeAreaView>
     );
   }

@@ -78,17 +78,22 @@ export default function SeverityStep() {
                 <View
                   style={{
                     borderRadius: tokens.radii.xl,
-                    padding: 4,
+                    padding: 6,
                     borderWidth: 2,
-                    borderColor: selected ? tokens.colors.accent.primary : 'transparent',
+                    borderColor: selected
+                      ? tokens.colors.accent.primary
+                      : tokens.colors.border.strong,
+                    backgroundColor: selected
+                      ? tokens.colors.accent.primarySoft
+                      : tokens.colors.surface.solid,
                   }}
                 >
                   <SeverityIndicator concern={concern} level={level} size={140} />
                 </View>
-                <Text variant="label" tone={selected ? 'accent' : 'secondary'} weight="semibold">
+                <Text variant="label" tone={selected ? 'accent' : 'primary'} weight="semibold">
                   {LEVEL_LABELS[level]}
                 </Text>
-                <Text variant="caption" tone="tertiary">
+                <Text variant="caption" tone="secondary">
                   {concern === 'acne' && level === 0
                     ? 'No active breakouts'
                     : `${CONCERN_LABELS[concern]} — level ${level}`}

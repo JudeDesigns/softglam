@@ -10,11 +10,7 @@ import {
   type SkinToneTier,
   type SkinType,
 } from '@softglow/types';
-
-/**
- * Frontend-phase persistence. Replaced by API-backed storage in phase 2 —
- * the shape of `profile` already matches the eventual server payload.
- */
+import { apiGetMySkinProfile, apiUpsertMySkinProfile } from '@/api/skin-profiles';
 
 interface DraftProfile {
   toneTier: SkinToneTier | null;
@@ -27,6 +23,7 @@ interface SkinProfileState {
   profile: SkinProfile | null;
   draft: DraftProfile;
   onboardingSkipped: boolean;
+  isSyncing: boolean;
 
   setDraftConcernSeverity: (concern: SkinConcern, severity: SeverityLevel) => void;
   setDraftTone: (tier: SkinToneTier) => void;
@@ -36,9 +33,12 @@ interface SkinProfileState {
   updateZoneTag: (id: string, concerns: SkinConcern[]) => void;
   removeZoneTag: (id: string) => void;
 
-  /** Compute the score from the current draft and commit it as the profile. */
-  commitDraft: () => SkinProfile | null;
+  /** Compute the score from the current draft, commit locally, and sync to API. */
+  commitDraft: () => Promise<SkinProfile | null>;
   resetDraft: () => void;
+
+  /** Pull the user's existing skin profile from the API (called after sign-in). */
+  fetchFromApi: () => Promise<void>;
 
   skipOnboarding: () => void;
   resumeOnboarding: () => void;
@@ -52,12 +52,24 @@ const emptyDraft: DraftProfile = {
   zoneTags: [],
 };
 
+function apiProfileToLocal(api: Awaited<ReturnType<typeof apiGetMySkinProfile>>): SkinProfile {
+  return {
+    toneTier: api.tone_tier,
+    type: api.skin_type,
+    concerns: api.concerns as Partial<Record<SkinConcern, SeverityLevel>>,
+    zoneTags: api.zone_tags,
+    healthScore: api.health_score,
+    capturedAt: api.captured_at,
+  };
+}
+
 export const useSkinProfile = create<SkinProfileState>()(
   persist(
     (set, get) => ({
       profile: null,
       draft: emptyDraft,
       onboardingSkipped: false,
+      isSyncing: false,
 
       setDraftConcernSeverity: (concern, severity) =>
         set((state) => ({
@@ -94,12 +106,11 @@ export const useSkinProfile = create<SkinProfileState>()(
           },
         })),
 
-      commitDraft: () => {
+      commitDraft: async () => {
         const { draft } = get();
-        if (draft.toneTier === null || draft.type === null) {
-          return null;
-        }
-        const profile: SkinProfile = {
+        if (draft.toneTier === null || draft.type === null) return null;
+
+        const localProfile: SkinProfile = {
           toneTier: draft.toneTier,
           type: draft.type,
           concerns: draft.concerns,
@@ -107,11 +118,36 @@ export const useSkinProfile = create<SkinProfileState>()(
           healthScore: computeHealthScore(draft.concerns),
           capturedAt: new Date().toISOString(),
         };
-        set({ profile, onboardingSkipped: false });
-        return profile;
+        // Optimistic local commit.
+        set({ profile: localProfile, onboardingSkipped: false, isSyncing: true });
+
+        try {
+          const apiProfile = await apiUpsertMySkinProfile({
+            tone_tier: draft.toneTier,
+            skin_type: draft.type,
+            concerns: draft.concerns as Partial<Record<SkinConcern, number>>,
+            zone_tags: draft.zoneTags,
+          });
+          const synced = apiProfileToLocal(apiProfile);
+          set({ profile: synced, isSyncing: false });
+          return synced;
+        } catch {
+          // Keep the local version if the API call fails — will re-sync on next commit.
+          set({ isSyncing: false });
+          return localProfile;
+        }
       },
 
       resetDraft: () => set({ draft: emptyDraft }),
+
+      fetchFromApi: async () => {
+        try {
+          const api = await apiGetMySkinProfile();
+          set({ profile: apiProfileToLocal(api) });
+        } catch {
+          // 404 means no profile yet — that's fine.
+        }
+      },
 
       skipOnboarding: () => set({ onboardingSkipped: true }),
       resumeOnboarding: () => set({ onboardingSkipped: false }),
