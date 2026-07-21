@@ -8,6 +8,7 @@ from app.modules.appointments.models import Appointment, AppointmentProduct
 from app.modules.artists.models import ArtistProfile
 from app.modules.invites.models import Invite
 from app.modules.look_requests.models import LookRequest
+from app.modules.looks.models import Look, LookSection
 from app.modules.products.models import Product
 from app.modules.skin_profiles.models import SkinProfile
 from app.modules.users.models import User
@@ -17,7 +18,9 @@ __all__ = [
     "AppointmentProduct",
     "ArtistProfile",
     "Invite",
+    "Look",
     "LookRequest",
+    "LookSection",
     "Product",
     "SkinProfile",
     "User",

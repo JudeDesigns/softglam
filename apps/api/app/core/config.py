@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24  # 24h
     refresh_token_expire_days: int = 30
 
+    # --- AI ---
+    gemini_api_key: str = ""
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
