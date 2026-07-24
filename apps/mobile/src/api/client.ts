@@ -11,12 +11,17 @@ const ACCESS_KEY = 'softglow.access';
 const REFRESH_KEY = 'softglow.refresh';
 
 function resolveBaseUrl(): string {
+  // Per-developer override — set in apps/mobile/.env.local (gitignored), e.g.
+  // EXPO_PUBLIC_API_URL=http://192.168.1.23:8000/api/v1
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  if (typeof fromEnv === 'string' && fromEnv.length > 0) return fromEnv;
+
   const fromExtra =
     (Constants.expoConfig?.extra as Record<string, unknown> | undefined)?.apiBaseUrl;
   if (typeof fromExtra === 'string' && fromExtra.length > 0) return fromExtra;
 
-  // In Expo Go the debugger host tells us the Mac's LAN IP — use that so the
-  // phone can reach the API instead of hitting its own localhost.
+  // In Expo Go the debugger host tells us the host machine's LAN IP — use that
+  // so the phone can reach the API instead of hitting its own localhost.
   const debuggerHost = Constants.expoConfig?.hostUri ?? (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
   if (typeof debuggerHost === 'string') {
     const ip = debuggerHost.split(':')[0];

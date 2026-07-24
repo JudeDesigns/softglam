@@ -10,6 +10,7 @@ import Requests from '@/pages/Requests';
 import Appointments from '@/pages/Appointments';
 import Products from '@/pages/Products';
 import Invites from '@/pages/Invites';
+import Looks from '@/pages/Looks';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/requests"     element={<Requests />} />
             <Route path="/appointments" element={<Appointments />} />
             <Route path="/products"     element={<Products />} />
+            <Route path="/looks"        element={<Looks />} />
             <Route path="/invites"      element={<Invites />} />
           </Route>
         </Route>

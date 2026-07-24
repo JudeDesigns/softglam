@@ -47,6 +47,12 @@ const Icons = {
       <path d="M2 7l8 5 8-5" strokeLinecap="round" />
     </svg>
   ),
+  looks: (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-4 h-4">
+      <path d="M10 3c-4 3-7 5-7 8a7 7 0 0 0 14 0c0-3-3-5-7-8Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+    </svg>
+  ),
   signout: (
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-4 h-4">
       <path d="M13 10H3m0 0 3-3m-3 3 3 3" strokeLinecap="round" strokeLinejoin="round" />
@@ -63,6 +69,7 @@ const NAV = [
   { to: '/requests',     icon: Icons.requests,      label: 'Look Requests' },
   { to: '/appointments', icon: Icons.appointments,  label: 'Appointments' },
   { to: '/products',     icon: Icons.products,      label: 'Products' },
+  { to: '/looks',        icon: Icons.looks,         label: 'Looks' },
   { to: '/invites',      icon: Icons.invites,       label: 'Invites' },
 ];
 

@@ -127,3 +127,27 @@ export interface CogsSummary {
   gross_margin_pct: number | null;
   products: AppointmentProduct[];
 }
+
+export type LookFinish = 'matte' | 'satin' | 'glow';
+
+export interface LookShades {
+  lip: string;
+  cheek: string;
+  eye: string;
+}
+
+export interface Look {
+  id: string;
+  name: string;
+  caption: string;
+  finish: LookFinish;
+  shades: LookShades;
+  preview_image_url: string | null;
+}
+
+export interface LookSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  looks: Look[];
+}
