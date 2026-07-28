@@ -1,5 +1,10 @@
 # Softglow local / VPS dev stack.
 # Copy apps/api/.env.example to apps/api/.env, fill it in, then `docker compose up -d --build`.
+#
+# For the `mobile` service, set HOST_LAN_IP in a root-level .env file to your
+# machine's LAN IP (e.g. `ipconfig` on Windows, `ipconfig getifaddr en0` on Mac)
+# so phones on the same network can reach the API through Expo Go:
+#   HOST_LAN_IP=192.168.1.23
 
 services:
   db:
@@ -42,5 +47,47 @@ services:
       retries: 3
       start_period: 15s
 
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Reach the api container by service name instead of localhost.
+      VITE_API_PROXY_TARGET: http://api:8000
+    volumes:
+      - ./apps/admin:/app/apps/admin
+      - ./packages:/app/packages
+      - admin_node_modules:/app/apps/admin/node_modules
+    ports:
+      - "5174:5174"
+
+  mobile:
+    build:
+      context: .
+      dockerfile: apps/mobile/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Point the app at this host's LAN IP so phones/browsers can reach the
+      # API — set this in a root .env file, e.g. HOST_LAN_IP=192.168.1.23.
+      EXPO_PUBLIC_API_URL: http://${HOST_LAN_IP:-localhost}:8000/api/v1
+    volumes:
+      - ./apps/mobile:/app/apps/mobile
+      - ./packages:/app/packages
+      - mobile_node_modules:/app/apps/mobile/node_modules
+    ports:
+      - "8081:8081"
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+    stdin_open: true
+    tty: true
+
 volumes:
   softglow_pg:
+  admin_node_modules:
+  mobile_node_modules:

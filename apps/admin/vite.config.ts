@@ -11,9 +11,12 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // Override in docker-compose to reach the `api` service by name
+        // instead of localhost.
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8000',
         changeOrigin: true,
       },
     },

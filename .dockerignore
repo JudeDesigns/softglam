@@ -1,0 +1,9 @@
+**/node_modules
+.git
+.dbg
+*.ndjson
+apps/mobile/.expo
+apps/admin/dist
+apps/mobile/dist
+**/.env
+**/.env.local
