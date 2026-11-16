@@ -48,21 +48,24 @@ export function LookThumb({
   fluid?: boolean;
 }) {
   const shades = [look.shades.lip, look.shades.cheek, look.shades.eye];
+  // Size lives on a plain View: NativeWind's Pressable wrapper can drop a
+  // function-style `width`, which let the card grow to its caption's full
+  // length (one huge card on Home). The fixed width also caps the text.
   return (
+    <View style={{ width: fluid ? '100%' : width }}>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${look.name}, ${look.finish} finish`}
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => ({
-        width: fluid ? '100%' : width,
+      style={{
+        width: '100%',
         borderRadius: tokens.radii.xl,
         borderWidth: selected ? 2 : 1,
         borderColor: selected ? '#C97B6A' : '#E4D9CD',
         backgroundColor: '#FAF6F1',
         overflow: 'hidden',
-        opacity: pressed ? 0.92 : 1,
-      })}
+      }}
     >
       <View style={{ aspectRatio: 4 / 5, backgroundColor: '#2B211D' }}>
         {look.previewImageUrl ? (
@@ -104,6 +107,7 @@ export function LookThumb({
         </Text>
       </View>
     </Pressable>
+    </View>
   );
 }
 

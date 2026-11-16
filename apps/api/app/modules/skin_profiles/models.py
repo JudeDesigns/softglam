@@ -5,6 +5,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class SkinProfile(SQLModel, table=True):
     __tablename__ = "skin_profiles"
@@ -20,5 +22,5 @@ class SkinProfile(SQLModel, table=True):
     zone_tags: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
 
     health_score: int = Field(ge=0, le=100)
-    captured_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    captured_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))

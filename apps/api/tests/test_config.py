@@ -38,3 +38,12 @@ def test_unsafe_prod_config_is_refused(overrides, message):
 
 def test_dev_defaults_still_allowed():
     assert Settings(_env_file=None, environment="dev").jwt_secret == DEV_JWT_SECRET
+
+
+def test_database_host_override_rewrites_url():
+    s = Settings(
+        _env_file=None,
+        database_url="postgresql+asyncpg://u:p%40ss@localhost:5433/softglow",
+        database_host="db",
+    )
+    assert s.database_url == "postgresql+asyncpg://u:p%40ss@db:5432/softglow"

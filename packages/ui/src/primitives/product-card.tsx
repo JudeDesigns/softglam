@@ -1,4 +1,5 @@
-import { Image, Pressable, View, type ImageSourcePropType, type PressableProps } from 'react-native';
+import { Image, View, type ImageSourcePropType, type PressableProps } from 'react-native';
+import { Pressable } from './pressable';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { tokens } from '@softglow/tokens';
 import { Text } from './text';

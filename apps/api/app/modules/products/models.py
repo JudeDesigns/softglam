@@ -4,6 +4,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class Product(SQLModel, table=True):
     """Catalog product. Seeded by admin; browsable by all authenticated users."""
@@ -21,5 +23,5 @@ class Product(SQLModel, table=True):
     # JSON array of ingredient strings
     ingredients: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))

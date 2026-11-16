@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, Platform, ScrollView, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';

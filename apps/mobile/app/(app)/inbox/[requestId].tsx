@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import { Alert, ScrollView, Text as RNText, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

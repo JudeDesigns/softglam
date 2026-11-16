@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Pressable,
   ScrollView,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';

@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Async SQLAlchemy URL. asyncpg in prod, aiosqlite for tests.
     database_url: str = "postgresql+asyncpg://softglow:softglow@db:5432/softglow"
     db_echo: bool = False
+    # When set (docker-compose sets it to `db`), replaces the host/port in
+    # DATABASE_URL, so one .env works both inside and outside Docker.
+    database_host: str | None = None
 
     # --- Security ---
     jwt_secret: str = DEV_JWT_SECRET
@@ -48,6 +51,15 @@ class Settings(BaseSettings):
     # Inside docker-compose this is a named volume; swap for S3 later.
     media_dir: str = "media"
     media_max_bytes: int = 8 * 1024 * 1024
+
+    @model_validator(mode="after")
+    def _apply_database_host(self) -> "Settings":
+        if self.database_host:
+            from sqlalchemy.engine import make_url
+
+            url = make_url(self.database_url).set(host=self.database_host, port=5432)
+            self.database_url = url.render_as_string(hide_password=False)
+        return self
 
     @model_validator(mode="after")
     def _refuse_unsafe_production_config(self) -> "Settings":

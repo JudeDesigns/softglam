@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text as RNText, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text as RNText, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';

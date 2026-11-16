@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';

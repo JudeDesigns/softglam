@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   ScrollView,
   Text as RNText,
   TextInput,
   View,
 } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';
 import { IconButton, Row, Screen, Stack } from '@softglow/ui';

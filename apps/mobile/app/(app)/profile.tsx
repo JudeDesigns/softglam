@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {

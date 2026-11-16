@@ -1,4 +1,5 @@
-import { Pressable, type PressableProps } from 'react-native';
+import { type PressableProps } from 'react-native';
+import { Pressable } from './pressable';
 import { tokens } from '@softglow/tokens';
 import { Text } from './text';
 

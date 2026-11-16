@@ -2,7 +2,10 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
+from sqlalchemy import String
 from sqlmodel import Field, SQLModel
+
+from app.core.db_types import TZDateTime
 
 
 class AppointmentStatus(StrEnum):
@@ -32,7 +35,7 @@ class Appointment(SQLModel, table=True):
     look_request_id: UUID | None = Field(default=None, foreign_key="look_requests.id")
 
     # Scheduling
-    scheduled_at: datetime = Field(index=True)
+    scheduled_at: datetime = Field(sa_type=TZDateTime, index=True)
     duration_minutes: int = Field(default=60, ge=15, le=480)
 
     # Location
@@ -46,12 +49,16 @@ class Appointment(SQLModel, table=True):
     quoted_price: float | None = Field(default=None, ge=0)
     final_price: float | None = Field(default=None, ge=0)
 
-    status: AppointmentStatus = Field(default=AppointmentStatus.booked, index=True)
+    # Stored as VARCHAR(32), not a Postgres enum (see migration b2c3d4e5f6a7);
+    # without sa_type the insert asks for a non-existent "appointmentstatus" type.
+    status: AppointmentStatus = Field(
+        default=AppointmentStatus.booked, sa_type=String(32), index=True
+    )
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    completed_at: datetime | None = Field(default=None)
-    cancelled_at: datetime | None = Field(default=None)
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = Field(sa_type=TZDateTime, default=None)
+    cancelled_at: datetime | None = Field(sa_type=TZDateTime, default=None)
 
 
 class AppointmentProduct(SQLModel, table=True):
@@ -72,4 +79,4 @@ class AppointmentProduct(SQLModel, table=True):
     quantity: float = Field(default=1.0, ge=0)
     unit_cost: float = Field(ge=0)
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))

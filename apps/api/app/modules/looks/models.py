@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from sqlalchemy import Column, Text
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class LookSection(SQLModel, table=True):
     """A category grouping of makeup looks (e.g. Editorial, Bridal)."""
@@ -13,8 +15,8 @@ class LookSection(SQLModel, table=True):
     title: str = Field(max_length=120)
     subtitle: str = Field(max_length=240)
     sort_order: int = Field(default=0, index=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
 
 
 class Look(SQLModel, table=True):
@@ -38,6 +40,6 @@ class Look(SQLModel, table=True):
     # Generated AI preview — stored as a data: URL (base64) since there is no
     # object storage/CDN wired up yet. Nullable until a preview is generated.
     preview_image_url: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
-    preview_generated_at: datetime | None = Field(default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    preview_generated_at: datetime | None = Field(sa_type=TZDateTime, default=None)
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';

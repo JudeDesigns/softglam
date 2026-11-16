@@ -4,6 +4,8 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class UserRole(StrEnum):
     client = "client"
@@ -20,5 +22,5 @@ class User(SQLModel, table=True):
     role: UserRole = Field(default=UserRole.client, index=True)
     display_name: str = Field(max_length=120)
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Pressable, Text as RNText, TextInput, View } from 'react-native';
+import { Alert, Text as RNText, TextInput, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';
 import { Avatar, Row, Screen, Stack } from '@softglow/ui';

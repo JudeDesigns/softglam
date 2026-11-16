@@ -11,7 +11,8 @@ interface TabMeta { label: string; icon: IoniconName }
 
 const TAB_META: Record<string, TabMeta> = {
   home:        { label: 'Home',     icon: 'sparkles' },
-  'look-share':{ label: 'Looks',    icon: 'color-palette' },
+  // The Looks tab is the folder's index screen, so its route is 'look-share/index'.
+  'look-share/index': { label: 'Looks', icon: 'color-palette' },
   requests:    { label: 'Requests', icon: 'paper-plane' },
   inbox:       { label: 'Inbox',    icon: 'mail' },
   invite:      { label: 'Invite',   icon: 'person-add' },
@@ -22,7 +23,7 @@ const TAB_META: Record<string, TabMeta> = {
 
 /** Tabs shown per role, in display order. */
 const TABS_BY_ROLE = {
-  client: ['home', 'look-share', 'requests', 'shop', 'profile'] as const,
+  client: ['home', 'look-share/index', 'requests', 'shop', 'profile'] as const,
   artist: ['home', 'inbox', 'bookings', 'invite', 'profile'] as const,
 } as const;
 
@@ -138,7 +139,7 @@ export default function AppLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home"       options={{ title: 'Home' }} />
-      <Tabs.Screen name="look-share" options={{ title: 'Looks',    href: role === 'artist' ? null : undefined }} />
+      <Tabs.Screen name="look-share/index" options={{ title: 'Looks', href: role === 'artist' ? null : undefined }} />
       <Tabs.Screen name="requests"   options={{ title: 'Requests', href: role === 'artist' ? null : undefined }} />
       <Tabs.Screen name="inbox"      options={{ title: 'Inbox',    href: role === 'client' ? null : undefined }} />
       <Tabs.Screen name="invite"     options={{ title: 'Invite',   href: role === 'client' ? null : undefined }} />

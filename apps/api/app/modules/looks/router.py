@@ -221,7 +221,7 @@ async def generate_preview(
 
     try:
         preview_url = await generate_look_preview(look, payload.photo_data_url)
-    except Exception as exc:  # noqa: BLE001 — surface as a clean 502 to the admin UI
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Preview generation failed: {exc}"
         ) from exc

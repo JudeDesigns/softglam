@@ -3,7 +3,8 @@
  * (app/(app)/look-share/[id].tsx) and copying a look from photos
  * (app/(app)/look-share/copy.tsx).
  */
-import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, TextInput, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';

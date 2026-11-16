@@ -1,15 +1,19 @@
-# Softglow local / VPS dev stack.
-# Copy apps/api/.env.example to apps/api/.env, fill it in, then `docker compose up -d --build`.
+# SoftGlow dev stack: Postgres + API + admin dashboard. See README.md.
 #
-# For the `mobile` service, set HOST_LAN_IP in a root-level .env file to your
-# machine's LAN IP (e.g. `ipconfig` on Windows, `ipconfig getifaddr en0` on Mac)
-# so phones on the same network can reach the API through Expo Go:
-#   HOST_LAN_IP=192.168.1.23
+#   cp apps/api/.env.example apps/api/.env      # once; add GEMINI_API_KEY
+#   docker compose up -d --build
+#
+# The mobile app is best run directly on your computer (`pnpm --filter
+# @softglow/mobile start`), not in Docker. A Docker version is available with
+# `docker compose --profile mobile up -d mobile` but needs Expo's tunnel.
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    # POSTGRES_* here must match what the API uses (see the api command below).
+    env_file:
+      - ./apps/api/.env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-softglow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-softglow}
@@ -21,9 +25,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # Only expose locally; in prod, leave commented and reach via the docker network.
+    # Exposed on 127.0.0.1:5433 (not 5432) so it doesn't clash with a Postgres
+    # already installed on the computer. Only needed for running the API or a
+    # DB tool outside Docker; set DB_HOST_PORT in a root .env to change it.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_HOST_PORT:-5433}:5432"
 
   api:
     build:
@@ -35,9 +41,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      # Inside Docker the database is always the `db` service, whatever host
+      # DATABASE_URL in .env names (it points at localhost for running outside
+      # Docker). Applies to every command in this container, incl. scripts.
+      DATABASE_HOST: db
     # Run pending migrations then start the server.
-    command: >
-      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
       - softglow_media:/app/media
     ports:
@@ -67,6 +77,9 @@ services:
       - "5174:5174"
 
   mobile:
+    # Optional: only starts with `--profile mobile`. Running Expo on the host
+    # is simpler and faster (see README.md).
+    profiles: ["mobile"]
     build:
       context: .
       dockerfile: apps/mobile/Dockerfile

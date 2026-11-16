@@ -4,6 +4,8 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class InviteChannel(StrEnum):
     email = "email"
@@ -33,5 +35,5 @@ class Invite(SQLModel, table=True):
     code: str = Field(index=True, unique=True, max_length=32)
 
     status: InviteStatus = Field(default=InviteStatus.sent, index=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    accepted_at: datetime | None = Field(default=None)
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    accepted_at: datetime | None = Field(sa_type=TZDateTime, default=None)

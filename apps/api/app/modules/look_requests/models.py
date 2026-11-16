@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import JSON, Column, DateTime, Text
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class LookRequestStatus(StrEnum):
     pending = "pending"
@@ -45,6 +47,6 @@ class LookRequest(SQLModel, table=True):
     )
     appointment_id: UUID | None = Field(default=None, foreign_key="appointments.id")
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    viewed_at: datetime | None = Field(default=None)
-    responded_at: datetime | None = Field(default=None)
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    viewed_at: datetime | None = Field(sa_type=TZDateTime, default=None)
+    responded_at: datetime | None = Field(sa_type=TZDateTime, default=None)
