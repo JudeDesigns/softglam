@@ -22,7 +22,7 @@ by default).
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | any recent | `docker compose version` |
 | [Node.js](https://nodejs.org/) | **22** (20 also works) | `node -v` |
 | pnpm | 11 | `pnpm -v` |
-| [Expo Go](https://expo.dev/go) on your phone | the version for **Expo SDK 54** | App Store / Play Store |
+| [Expo Go](https://expo.dev/go) on your phone | latest from the App Store / Play Store (**Expo SDK 57**) | App Store / Play Store |
 
 pnpm comes with Node; turn it on with:
 
@@ -30,8 +30,10 @@ pnpm comes with Node; turn it on with:
 corepack enable
 ```
 
-> **Expo Go must match SDK 54.** If Expo Go says the project is "incompatible",
-> update Expo Go from the store (or install the SDK 54 build from expo.dev/go).
+> **The project uses Expo SDK 57.** Expo Go only opens projects built for its
+> own SDK, and iPhones can only install the newest Expo Go. If Expo Go says the
+> project is "incompatible", update Expo Go from the store. No Mac or simulator
+> is needed: a phone with Expo Go is enough.
 
 ## 2. One-time setup
 
@@ -125,7 +127,7 @@ docker compose exec api python -m app.scripts.create_admin you@example.com "Your
 | Mac/Windows firewall prompt | Allow **Node** to accept incoming connections. |
 | App opens but says it can't reach SoftGlow / logins fail | The API isn't reachable from the phone. Check `curl http://localhost:8000/healthz` on the computer. If you used `--tunnel`, set `EXPO_PUBLIC_API_URL=http://<your computer's Wi-Fi IP>:8000/api/v1` in `apps/mobile/.env.local` and restart Expo. (Find the IP: Mac `ipconfig getifaddr en0`, Windows `ipconfig`.) |
 | Stuck at "Bundling 99.9%" or strange red errors after pulling | Restart Expo with a clean cache: `pnpm --filter @softglow/mobile start --clear` |
-| "Incompatible with this version of Expo Go" | Update Expo Go (needs SDK 54). |
+| "Incompatible with this version of Expo Go" | Update Expo Go from the store (the project needs SDK 57). |
 | `command not found: pnpm` | Run `corepack enable` (step 1). |
 | Expo prints "packages should be updated for best compatibility" | Safe to ignore for testing. |
 
