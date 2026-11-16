@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, Platform, ScrollView, View } from 'react-native';
 import { Pressable } from '@softglow/ui';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,8 @@ import {
 } from '@/look-share/components';
 import { useArtists } from '@/state/artists';
 import { useLookRequests } from '@/state/look-requests';
+import { newCopyDraftId, useLookDrafts } from '@/state/look-drafts';
+import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { IntensitySlider } from '@/try-on/components';
 
@@ -80,7 +82,13 @@ interface Preview {
   referenceUrls: string[];
 }
 
+/** A photo restored from a saved draft: shown from the server, already uploaded. */
+function restoredPhoto(url: string): PickedPhoto {
+  return { uri: mediaUrl(url), mimeType: url.endsWith('.png') ? 'image/png' : 'image/jpeg', width: 0, height: 0 };
+}
+
 export default function CopyALook() {
+  const params = useLocalSearchParams<{ draft?: string }>();
   const insets = useSafeAreaInsets();
   const { user } = useSession();
   const artists = useArtists((s) => s.artists);
@@ -103,6 +111,46 @@ export default function CopyALook() {
 
   // local photo uri → uploaded /media path, so "Update preview" doesn't re-upload.
   const uploads = useRef(new Map<string, string>());
+  // Bumped when a background upload finishes, so the draft autosave sees it.
+  const [uploadVersion, setUploadVersion] = useState(0);
+
+  // Drafts: this session's id (a resumed draft keeps its own), autosave, resume.
+  const [draftId] = useState(() => params.draft ?? newCopyDraftId());
+  const saveDraft = useLookDrafts((s) => s.save);
+  const removeDraft = useLookDrafts((s) => s.remove);
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !params.draft) return;
+    restored.current = true;
+    const d = useLookDrafts.getState().drafts.find((x) => x.id === params.draft);
+    if (!d) return;
+    const remember = (url: string) => {
+      const photo = restoredPhoto(url);
+      uploads.current.set(photo.uri, url);
+      return photo;
+    };
+    if (d.selfieUrl) setSelfie(remember(d.selfieUrl));
+    if (d.referenceUrls?.length) setInspirations(d.referenceUrls.map(remember));
+    if (d.settings) setSettings(d.settings);
+    if (d.master !== undefined) setMaster(d.master);
+    if (d.artistId) setArtistId(d.artistId);
+    if (d.message) setMessage(d.message);
+    if (d.previewUrl && d.previewRecipe && d.selfieUrl && d.referenceUrls) {
+      setPreview({
+        generatedUrl: d.previewUrl,
+        validation: {
+          passed: d.previewPassed ?? true,
+          identity_preserved: d.previewPassed ?? true,
+          makeup_applied: d.previewPassed ?? true,
+          issues: d.previewIssues ?? [],
+        },
+        recipe: d.previewRecipe,
+        selfieUrl: d.selfieUrl,
+        referenceUrls: d.referenceUrls,
+      });
+    }
+    setUploadVersion((v) => v + 1);
+  }, [params.draft]);
 
   useEffect(() => { void fetchArtists(); }, [fetchArtists]);
   useEffect(() => {
@@ -121,18 +169,46 @@ export default function CopyALook() {
     sameRecipe(preview.recipe, recipe);
   const canSend = previewIsCurrent && !!artistId && !sending;
 
+  // Autosave whatever has been uploaded so far, so "My looks" can resume it.
+  useEffect(() => {
+    if (sentRequestId) return;
+    const selfieUrl = selfie ? uploads.current.get(selfie.uri) : undefined;
+    const referenceUrls = inspirations
+      .map((p) => uploads.current.get(p.uri))
+      .filter((u): u is string => !!u);
+    if (!selfieUrl && referenceUrls.length === 0) return;
+    saveDraft({
+      id: draftId,
+      kind: 'copy',
+      title: 'Your copied look',
+      selfieUrl,
+      referenceUrls,
+      settings,
+      master,
+      previewUrl: preview?.generatedUrl,
+      previewRecipe: preview?.recipe,
+      previewPassed: preview?.validation.passed,
+      previewIssues: preview?.validation.issues,
+      artistId: artistId ?? undefined,
+      message: message || undefined,
+    });
+  }, [selfie, inspirations, settings, master, preview, artistId, message, uploadVersion, sentRequestId, draftId, saveDraft]);
+
   // --- Photos ---------------------------------------------------------------
 
   const onPickSelfie = () =>
     chooseSource('Your photo', async (source) => {
       const picked = await pickPhoto(source);
-      if (picked) setSelfie(picked);
+      if (!picked) return;
+      setSelfie(picked);
+      void uploadInBackground(picked);
     });
 
   const onPickInspiration = (index: number) =>
     chooseSource(`Inspiration ${sourceLabel(index)}`, async (source) => {
       const picked = await pickPhoto(source);
       if (!picked) return;
+      void uploadInBackground(picked);
       setInspirations((prev) => {
         const next = [...prev];
         next[index] = picked;
@@ -158,6 +234,17 @@ export default function CopyALook() {
     setSettings((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
 
   // --- Generate -------------------------------------------------------------
+
+  // Upload as soon as a photo is picked: faster previews, and it can be saved
+  // as a draft. Failures are ignored here; "Create my look" retries them.
+  const uploadInBackground = async (photo: PickedPhoto) => {
+    try {
+      await ensureUploaded(photo);
+      setUploadVersion((v) => v + 1);
+    } catch {
+      // retried by ensureUploaded at generation time
+    }
+  };
 
   const ensureUploaded = async (photo: PickedPhoto) => {
     const cached = uploads.current.get(photo.uri);
@@ -214,6 +301,7 @@ export default function CopyALook() {
         artistId,
         message: message.trim() || undefined,
       });
+      removeDraft(draftId);
       setSentRequestId(id);
     } catch {
       Alert.alert("Couldn't send your look", 'Check your connection and try again.');

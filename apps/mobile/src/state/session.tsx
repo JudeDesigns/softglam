@@ -17,6 +17,7 @@ import { useInvites } from './invites';
 import { useArtists } from './artists';
 import { useLookCatalog } from './looks';
 import { useAppointments } from './appointments';
+import { useLookDrafts } from './look-drafts';
 
 export interface SessionUser {
   id: string;
@@ -171,6 +172,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     useLookRequests.getState().reset();
     useInvites.getState().reset();
     useAppointments.getState().reset();
+    useLookDrafts.getState().reset();
   }, []);
 
   const value = useMemo<SessionState>(

@@ -13,6 +13,7 @@ import {
   type LookRequestStatus,
 } from '@/state/look-requests';
 import { useArtists } from '@/state/artists';
+import { useOpenDrafts } from '@/state/look-drafts';
 
 // ─── Vanity palette (communication screens) ──────────────────────────────────
 const V = {
@@ -37,6 +38,7 @@ const V = {
  */
 export default function ClientRequests() {
   const requests = useLookRequests((s) => s.requests);
+  const openDrafts = useOpenDrafts();
   const isSyncing = useLookRequests((s) => s.isSyncing);
 
   const counts = useMemo(() => {
@@ -90,9 +92,34 @@ export default function ClientRequests() {
 
       <Row gap={tokens.spacing[3]} style={{ marginBottom: tokens.spacing[6] }}>
         <SummaryTile label="Awaiting" value={counts.pending + counts.viewed} accent />
-        <SummaryTile label="Replied" value={counts.quoted} />
-        <SummaryTile label="Declined" value={counts.declined} />
+        <SummaryTile label="To review" value={counts.quoted} />
+        <SummaryTile label="Booked" value={counts.accepted} />
       </Row>
+
+      {openDrafts.length > 0 && (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push('/(app)/look-share/mine')}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: tokens.spacing[3],
+            marginBottom: tokens.spacing[5],
+            padding: tokens.spacing[4],
+            borderRadius: tokens.radii.lg,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: V.accent,
+            backgroundColor: V.card,
+          }}
+        >
+          <Ionicons name="sparkles-outline" size={18} color={V.accent} />
+          <RNText style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 14, color: V.textPrimary }}>
+            {openDrafts.length} unfinished look{openDrafts.length === 1 ? '' : 's'} not sent yet
+          </RNText>
+          <RNText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: V.accent }}>Continue</RNText>
+        </Pressable>
+      )}
     </>
   );
 

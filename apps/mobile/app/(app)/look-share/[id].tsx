@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -27,6 +27,8 @@ import { useLook } from '@/state/looks';
 import { useArtists } from '@/state/artists';
 import { useSession } from '@/state/session';
 import { useLookRequests } from '@/state/look-requests';
+import { libraryDraftId, useLookDrafts } from '@/state/look-drafts';
+import { mediaUrl } from '@/api/client';
 import { pickPhoto } from '@/lib/photo-picker';
 import { generateLookOnPhoto, type GenerationStage, type LookValidation } from '@/look-share/generation';
 import { useSkinProfile } from '@/state/skin-profile';
@@ -54,6 +56,10 @@ export default function LookShareDetail() {
   const fetchArtists = useArtists((s) => s.fetch);
   const artistsLoading = useArtists((s) => s.isLoading);
   const sendRequest = useLookRequests((s) => s.sendRequest);
+  const saveDraft = useLookDrafts((s) => s.save);
+  const removeDraft = useLookDrafts((s) => s.remove);
+  const draftId = libraryDraftId(id ?? '');
+  const existingDraft = useLookDrafts((s) => s.drafts.find((d) => d.id === draftId));
   const insets = useSafeAreaInsets();
 
   // --- State ---
@@ -73,6 +79,39 @@ export default function LookShareDetail() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => { void fetchArtists(); }, [fetchArtists]);
+
+  // Resume an unfinished look for this catalog look (from "My looks" or
+  // simply reopening it): restore the photo, preview, artist and note.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !existingDraft) return;
+    restored.current = true;
+    if (existingDraft.selfieUrl) {
+      setPhotoUri(mediaUrl(existingDraft.selfieUrl));
+      setUploadedPhotoUrl(existingDraft.selfieUrl);
+    }
+    if (existingDraft.previewUrl) {
+      setGeneratedUri(existingDraft.previewUrl);
+      setStage('ready');
+    }
+    if (existingDraft.artistId) setArtistId(existingDraft.artistId);
+    if (existingDraft.message) setMessage(existingDraft.message);
+  }, [existingDraft]);
+
+  // Keep the draft's artist and note current once there's a preview to come back to.
+  useEffect(() => {
+    if (!look || !uploadedPhotoUrl || !generatedUri || step === 'sent') return;
+    saveDraft({
+      id: draftId,
+      kind: 'library',
+      title: look.name,
+      lookId: look.id,
+      selfieUrl: uploadedPhotoUrl,
+      previewUrl: generatedUri,
+      artistId: artistId ?? undefined,
+      message: message || undefined,
+    });
+  }, [look, uploadedPhotoUrl, generatedUri, artistId, message, step, draftId, saveDraft]);
 
   useEffect(() => {
     if (artists.length > 0 && !artistId) setArtistId(artists[0]!.id);
@@ -157,6 +196,7 @@ export default function LookShareDetail() {
         artistId: artist.id,
         message: message.trim() || undefined,
       });
+      removeDraft(draftId);
       setSentRequestId(reqId);
       setStep('sent');
     } catch {

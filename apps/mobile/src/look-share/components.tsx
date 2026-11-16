@@ -252,8 +252,13 @@ export function SentConfirmation({ lookName, requestId }: { lookName: string; re
           </Stack>
         </Card>
         <View style={{ marginTop: tokens.spacing[6], gap: tokens.spacing[3] }}>
-          <Button label="Browse more looks" variant="primary" fullWidth onPress={() => router.replace('/(app)/look-share')} />
-          <Button label="Back to home" variant="secondary" fullWidth onPress={() => router.replace('/(app)/home')} />
+          <Button
+            label="See my looks"
+            variant="primary"
+            fullWidth
+            onPress={() => router.replace({ pathname: '/(app)/look-share/mine', params: { tab: 'sent' } })}
+          />
+          <Button label="Start another look" variant="secondary" fullWidth onPress={() => router.replace('/(app)/look-share')} />
         </View>
       </View>
     </Screen>
@@ -416,5 +421,99 @@ export function RequestVisuals({
         </View>
       ) : null}
     </Stack>
+  );
+}
+
+/**
+ * Header for the Looks screens: back button, title, and a small "My looks"
+ * button (with a dot when there are unfinished looks) that opens the history.
+ */
+export function LooksHeader({
+  eyebrow,
+  title,
+  onBack,
+  showMyLooks = true,
+  openDraftCount = 0,
+}: {
+  eyebrow: string;
+  title: string;
+  onBack?: () => void;
+  showMyLooks?: boolean;
+  openDraftCount?: number;
+}) {
+  return (
+    <Row justify="between" align="center" style={{ marginBottom: tokens.spacing[5] }}>
+      {onBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={onBack}
+          hitSlop={8}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: V.cardBorder,
+            backgroundColor: V.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="chevron-back" size={20} color={V.textPrimary} />
+        </Pressable>
+      ) : (
+        <View style={{ width: 40 }} />
+      )}
+      <Stack gap={2} align="center" style={{ flex: 1 }}>
+        <Text variant="caption" weight="medium" style={{ color: V.textSecondary, letterSpacing: 1.2 }}>
+          {eyebrow}
+        </Text>
+        <Text variant="titleSm" numberOfLines={1} style={{ color: V.textPrimary }}>
+          {title}
+        </Text>
+      </Stack>
+      {showMyLooks ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={openDraftCount > 0 ? `My looks, ${openDraftCount} unfinished` : 'My looks'}
+          onPress={() => router.push('/(app)/look-share/mine')}
+          hitSlop={6}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 10,
+            height: 32,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: V.cardBorder,
+            backgroundColor: V.card,
+          }}
+        >
+          <Ionicons name="albums-outline" size={14} color={V.textPrimary} />
+          <Text variant="caption" weight="semibold" style={{ color: V.textPrimary }}>Mine</Text>
+          {openDraftCount > 0 ? (
+            <View
+              style={{
+                minWidth: 16,
+                height: 16,
+                paddingHorizontal: 4,
+                borderRadius: 8,
+                backgroundColor: V.accent,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text variant="caption" weight="bold" style={{ color: '#FDFAF6', fontSize: 10 }}>
+                {openDraftCount}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
+      ) : (
+        <View style={{ width: 40 }} />
+      )}
+    </Row>
   );
 }

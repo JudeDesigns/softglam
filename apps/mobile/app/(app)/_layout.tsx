@@ -151,6 +151,8 @@ export default function AppLayout() {
       <Tabs.Screen name="look/[id]"            options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="look-share/[id]"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="look-share/copy"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="look-share/library"   options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="look-share/mine"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="inbox/[requestId]"    options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="requests/[requestId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="bookings/[id]"        options={{ href: null, tabBarStyle: { display: 'none' } }} />
