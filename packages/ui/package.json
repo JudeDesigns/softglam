@@ -13,22 +13,22 @@
   },
   "peerDependencies": {
     "@softglow/types": "workspace:*",
-    "expo-blur": "~15.0.8",
+    "expo-blur": "*",
     "react": "*",
-    "react-native": "0.81.5",
-    "react-native-safe-area-context": "~5.6.2",
-    "react-native-svg": "15.12.1"
+    "react-native": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-svg": "*"
   },
   "devDependencies": {
     "@softglow/config": "workspace:*",
     "@softglow/tokens": "workspace:*",
     "@softglow/types": "workspace:*",
-    "@types/react": "~19.1.17",
-    "expo-blur": "~15.0.8",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-safe-area-context": "~5.6.2",
-    "react-native-svg": "15.12.1",
+    "@types/react": "~19.2.10",
+    "expo-blur": "~57.0.3",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-svg": "15.15.4",
     "typescript": "^5.6.3"
   }
 }
