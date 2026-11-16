@@ -5,6 +5,16 @@
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
+/**
+ * Stored photos are relative `/media/...` paths on the API host. In dev Vite
+ * proxies /media; when VITE_API_URL is absolute (production) prefix its origin.
+ */
+export function mediaUrl(ref: string): string {
+  if (!ref.startsWith('/media/')) return ref;
+  const origin = /^https?:\/\//.test(BASE) ? new URL(BASE).origin : '';
+  return `${origin}${ref}`;
+}
+
 let accessToken: string | null = sessionStorage.getItem('sg_access_token');
 
 export function setToken(token: string) {

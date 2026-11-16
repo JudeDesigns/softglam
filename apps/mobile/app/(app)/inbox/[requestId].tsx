@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text as RNText, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,8 +7,10 @@ import { tokens } from '@softglow/tokens';
 import { Avatar, IconButton, Row, Screen, Stack } from '@softglow/ui';
 
 import { MakeupPreview } from '@/try-on/components';
-import { findLook } from '@/try-on/looks';
-import { STATUS_LABEL, useLookRequests } from '@/state/look-requests';
+import { useLook } from '@/state/looks';
+import { RequestVisuals } from '@/look-share/components';
+import { STATUS_LABEL, useLookRequests, type QuoteInput } from '@/state/look-requests';
+import { QuoteSheet } from '@/look-share/quote-sheet';
 
 // ─── Vanity palette (communication screens) ──────────────────────────────────
 const V = {
@@ -36,10 +38,10 @@ export default function InboxRequestDetail() {
   const decline = useLookRequests((s) => s.decline);
   const insets = useSafeAreaInsets();
 
-  const look = useMemo(() => (request ? findLook(request.lookId) : undefined), [request]);
+  const look = useLook(request?.lookId);
 
-  const [quoteText, setQuoteText] = useState('');
   const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (request && request.status === 'pending') {
@@ -66,21 +68,41 @@ export default function InboxRequestDetail() {
     );
   }
 
-  const onQuote = () => {
-    const value = quoteText.trim();
-    if (!value) return;
-    void quote(request.id, value);
-    setShowQuoteForm(false);
+  const onQuote = async (input: QuoteInput) => {
+    setBusy(true);
+    try {
+      await quote(request.id, input);
+      setShowQuoteForm(false);
+    } catch (err) {
+      Alert.alert("Couldn't send your quote", errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onDecline = () => {
-    void decline(request.id);
+    Alert.alert('Decline this request?', `${request.clientName || 'The client'} will be told you can't take it.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Decline',
+        style: 'destructive',
+        onPress: async () => {
+          setBusy(true);
+          try {
+            await decline(request.id);
+          } catch (err) {
+            Alert.alert("Couldn't decline", errorMessage(err));
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+    ]);
   };
 
-  const showActionBar = request.status !== 'declined' && request.status !== 'quoted';
-
-  // Estimate footer height for scroll padding
-  const footerHeight = showQuoteForm ? 200 : 80;
+  // The artist can still revise or withdraw a quote until the client accepts.
+  const showActionBar = request.status !== 'declined' && request.status !== 'accepted';
+  const footerHeight = 80;
 
   const statusBadgeCfg = requestStatusBadge(request.status);
 
@@ -254,44 +276,9 @@ export default function InboxRequestDetail() {
           </View>
         ) : null}
 
-        {/* ── Client's photo placeholder ───────────────────────────────────── */}
+        {/* ── Preview, client photo and (for copied looks) the recipe ─────── */}
         <View style={{ marginTop: tokens.spacing[6] }}>
-          <RNText
-            style={{
-              fontFamily: 'Inter_600SemiBold',
-              fontSize: 10,
-              letterSpacing: 0.6,
-              color: V.muted,
-              marginBottom: tokens.spacing[2],
-            }}
-          >
-            CLIENT&apos;S PHOTO
-          </RNText>
-          <View
-            style={{
-              marginTop: tokens.spacing[2],
-              aspectRatio: 1,
-              borderRadius: tokens.radii.xl,
-              backgroundColor: V.sunken,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: V.cardBorder,
-            }}
-          >
-            <Stack align="center" gap={tokens.spacing[2]}>
-              <Ionicons name="person-circle-outline" size={56} color={V.muted} />
-              <RNText
-                style={{
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 12,
-                  color: V.muted,
-                }}
-              >
-                Reference photo · {request.clientName}
-              </RNText>
-            </Stack>
-          </View>
+          <RequestVisuals request={request} />
         </View>
 
         {/* ── Note from client ─────────────────────────────────────────────── */}
@@ -368,6 +355,17 @@ export default function InboxRequestDetail() {
           </View>
         ) : null}
 
+        {request.status === 'accepted' && request.appointmentId ? (
+          <View style={{ marginTop: tokens.spacing[6] }}>
+            <VanityButton
+              label="Open booking"
+              variant="primary"
+              fullWidth
+              onPress={() => router.push(`/(app)/bookings/${request.appointmentId}`)}
+            />
+          </View>
+        ) : null}
+
         {!showActionBar && (
           <View style={{ marginTop: tokens.spacing[6] }}>
             <VanityButton label="Back to inbox" variant="secondary" fullWidth onPress={() => router.back()} />
@@ -392,64 +390,37 @@ export default function InboxRequestDetail() {
             gap: tokens.spacing[3],
           }}
         >
-          {showQuoteForm ? (
-            <Stack gap={tokens.spacing[3]}>
-              <RNText
-                style={{
-                  fontFamily: 'Inter_600SemiBold',
-                  fontSize: 10,
-                  letterSpacing: 0.6,
-                  color: V.muted,
-                }}
-              >
-                SEND A QUOTE
-              </RNText>
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: V.cardBorder,
-                  borderRadius: tokens.radii.lg,
-                  backgroundColor: V.sunken,
-                  paddingHorizontal: tokens.spacing[4],
-                  paddingVertical: tokens.spacing[3],
-                }}
-              >
-                <TextInput
-                  value={quoteText}
-                  onChangeText={setQuoteText}
-                  accessibilityLabel="Send a quote"
-                  placeholder="e.g. $180 · 90 min · in studio"
-                  placeholderTextColor={V.muted}
-                  style={{
-                    fontFamily: 'Inter_400Regular',
-                    fontSize: 15,
-                    color: V.textPrimary,
-                  }}
-                />
-              </View>
-              <Row gap={tokens.spacing[3]}>
-                <View style={{ flex: 1 }}>
-                  <VanityButton label="Cancel" variant="secondary" fullWidth onPress={() => setShowQuoteForm(false)} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <VanityButton label="Send quote" variant="primary" fullWidth disabled={!quoteText.trim()} onPress={onQuote} />
-                </View>
-              </Row>
-            </Stack>
-          ) : (
-            <Row gap={tokens.spacing[3]}>
-              <View style={{ flex: 1 }}>
-                <VanityButton label="Decline" variant="danger" fullWidth onPress={onDecline} />
-              </View>
-              <View style={{ flex: 2 }}>
-                <VanityButton label="Send quote" variant="primary" fullWidth onPress={() => setShowQuoteForm(true)} />
-              </View>
-            </Row>
-          )}
+          <Row gap={tokens.spacing[3]}>
+            <View style={{ flex: 1 }}>
+              <VanityButton label="Decline" variant="danger" fullWidth disabled={busy} onPress={onDecline} />
+            </View>
+            <View style={{ flex: 2 }}>
+              <VanityButton
+                label={request.status === 'quoted' ? 'Update quote' : 'Send quote'}
+                variant="primary"
+                fullWidth
+                disabled={busy}
+                onPress={() => setShowQuoteForm(true)}
+              />
+            </View>
+          </Row>
         </View>
+      )}
+      {showQuoteForm && (
+        <QuoteSheet
+          visible
+          initial={{ quotedPrice: request.quotedPrice, proposedAt: request.proposedAt }}
+          submitting={busy}
+          onCancel={() => setShowQuoteForm(false)}
+          onSubmit={(input) => void onQuote(input)}
+        />
       )}
     </Screen>
   );
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error && err.message ? err.message : 'Check your connection and try again.';
 }
 
 // ─── Local button (avoids @softglow/ui Button styling conflicts) ──────────────
@@ -516,6 +487,7 @@ function requestStatusBadge(status: string): { bg: string; text: string } {
     case 'viewed':   return { bg: V.sunken,           text: V.textMeta };
     case 'quoted':   return { bg: V.sage + '33',      text: '#4A6240' };
     case 'declined': return { bg: V.danger + '22',    text: V.danger };
+    case 'accepted': return { bg: V.sage + '55',      text: '#3A5230' };
     default:         return { bg: V.sunken,           text: V.textMeta };
   }
 }

@@ -33,6 +33,18 @@ function resolveBaseUrl(): string {
 
 export const API_BASE_URL = resolveBaseUrl();
 
+/** Scheme + host + port of the API, e.g. http://192.168.1.23:8000. */
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+
+/**
+ * Turns a stored image reference into something <Image> can load. Uploaded
+ * photos are stored as relative `/media/...` paths; anything else (local
+ * file:// URIs, data: URIs, absolute URLs) passes through unchanged.
+ */
+export function mediaUrl(ref: string): string {
+  return ref.startsWith('/media/') ? `${API_ORIGIN}${ref}` : ref;
+}
+
 export class ApiError extends Error {
   status: number;
   detail: unknown;
@@ -64,6 +76,8 @@ export async function clearTokens(): Promise<void> {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
+  /** Multipart body (file uploads). Mutually exclusive with `body`. */
+  form?: FormData;
   auth?: boolean;
   signal?: AbortSignal;
 }
@@ -78,7 +92,7 @@ async function _fetch(path: string, opts: RequestOptions): Promise<Response> {
   return fetch(`${API_BASE_URL}${path}`, {
     method: opts.method ?? 'GET',
     headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
     signal: opts.signal,
   });
 }
@@ -92,7 +106,8 @@ async function _refresh(): Promise<boolean> {
     body: JSON.stringify({ refresh_token: refresh }),
   });
   if (!res.ok) {
-    await clearTokens();
+    // Only a rejected refresh token ends the session; a server error doesn't.
+    if (res.status === 401 || res.status === 403) await clearTokens();
     return false;
   }
   const tokens = (await res.json()) as { access_token: string; refresh_token: string };
@@ -112,12 +127,21 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     } catch {
       detail = await res.text().catch(() => undefined);
     }
-    const message =
-      (detail && typeof detail === 'object' && 'detail' in detail
-        ? String((detail as { detail: unknown }).detail)
-        : undefined) ?? `Request failed (${res.status})`;
+    const message = readableDetail(detail) ?? `Request failed (${res.status})`;
     throw new ApiError(res.status, message, detail);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/** FastAPI errors are {detail: string} or, for validation, {detail: [{msg}]}. */
+function readableDetail(body: unknown): string | undefined {
+  if (!body || typeof body !== 'object' || !('detail' in body)) return undefined;
+  const detail = (body as { detail: unknown }).detail;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { msg?: unknown };
+    if (typeof first?.msg === 'string') return first.msg.replace(/^Value error, /, '');
+  }
+  return undefined;
 }

@@ -31,12 +31,13 @@ import { useProducts } from '@/state/products';
 import { BAND_COPY, bandForScore } from '@/lib/skin-health';
 import { LookThumb } from '@/try-on/components';
 import { topLooksForProfile } from '@/look-share/ranking';
-import { LOOK_SECTIONS } from '@/try-on/looks';
+import { useLookSections } from '@/state/looks';
 import { STATUS_LABEL, useLookRequests, type LookRequest } from '@/state/look-requests';
 
 export default function Home() {
   const { role, user } = useSession();
   const profile = useSkinProfile((s) => s.profile);
+  const lookSections = useLookSections();
   const onboardingSkipped = useSkinProfile((s) => s.onboardingSkipped);
   const resumeOnboarding = useSkinProfile((s) => s.resumeOnboarding);
 
@@ -121,8 +122,8 @@ export default function Home() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <Row align="start" gap={tokens.spacing[3]} style={{ paddingRight: tokens.spacing[4] }}>
             {(profile
-              ? topLooksForProfile(profile, 6)
-              : LOOK_SECTIONS.slice(0, 2).flatMap((s) => s.looks.slice(0, 3))
+              ? topLooksForProfile(lookSections, profile, 6)
+              : lookSections.slice(0, 2).flatMap((s) => s.looks.slice(0, 3))
             ).map((look) => (
               <LookThumb
                 key={look.id}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { tokens } from '@softglow/tokens';
 import { Badge, Card, IconButton, Row, Screen, Stack, Text } from '@softglow/ui';
 
 import { useSkinProfile } from '@/state/skin-profile';
+import { useLookCatalog, useLookSections } from '@/state/looks';
 import { LookThumb } from '@/try-on/components';
 import {
   matchLabelForScore,
@@ -20,8 +21,11 @@ const ROW_GAP = tokens.spacing[4];
 export default function LookShareGallery() {
   const profile = useSkinProfile((s) => s.profile);
 
-  const featured = useMemo(() => topLooksForProfile(profile, FEATURED_COUNT), [profile]);
-  const sections = useMemo(() => rankSectionsForProfile(profile), [profile]);
+  const catalog = useLookSections();
+  const fetchCatalog = useLookCatalog((s) => s.fetch);
+  useEffect(() => { void fetchCatalog(); }, [fetchCatalog]);
+  const featured = useMemo(() => topLooksForProfile(catalog, profile, FEATURED_COUNT), [catalog, profile]);
+  const sections = useMemo(() => rankSectionsForProfile(catalog, profile), [catalog, profile]);
 
   const scoreCopy = profile ? BAND_COPY[bandForScore(profile.healthScore)] : null;
 
@@ -53,6 +57,43 @@ export default function LookShareGallery() {
           </Text>
         </Stack>
       </Card>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Copy a look from a photo"
+        onPress={() => router.push('/(app)/look-share/copy')}
+        style={({ pressed }) => ({
+          marginTop: tokens.spacing[5],
+          borderRadius: tokens.radii.xl,
+          borderWidth: 1,
+          borderColor: '#E4D9CD',
+          backgroundColor: '#FAF6F1',
+          padding: tokens.spacing[5],
+          opacity: pressed ? 0.92 : 1,
+        })}
+      >
+        <Row gap={tokens.spacing[4]} align="center">
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: 'rgba(201,123,106,0.14)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="images-outline" size={22} color="#C97B6A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text variant="heading" style={{ color: '#2B211D' }}>Copy a look from a photo</Text>
+            <Text variant="bodySm" style={{ color: '#9A8070', marginTop: 2 }}>
+              See any makeup on your own face. Mix brows, eyes and lips from up to three photos.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#9A8070" />
+        </Row>
+      </Pressable>
 
       {profile ? (
         <View style={{ marginTop: tokens.spacing[8] }}>

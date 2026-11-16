@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Pressable, Text as RNText, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text as RNText, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';
 import { Avatar, Row, Screen, Stack } from '@softglow/ui';
+import { shareInvite } from '@/lib/invite-share';
+import { useSession } from '@/state/session';
 
 import {
   CHANNEL_LABEL,
@@ -41,20 +43,29 @@ export default function InviteClient() {
 
   const send = useInvites((s) => s.send);
   const invites = useInvites((s) => s.invites);
+  const { user } = useSession();
+  const [sending, setSending] = useState(false);
 
   const canSend = name.trim().length > 0 && (channel === 'link' || contact.trim().length > 0);
 
   const onSend = async () => {
-    if (!canSend) return;
+    if (!canSend || sending) return;
     const clientName = name.trim();
+    const note = message.trim() || undefined;
     setSendError(null);
+    setSending(true);
     try {
-      await send({
+      const id = await send({
         clientName,
         contact: channel === 'link' ? '' : contact.trim(),
         channel,
-        message: message.trim() || undefined,
+        message: note,
       });
+      const created = useInvites.getState().invites.find((i) => i.id === id);
+      // The invite is saved; now hand it to WhatsApp / Messages / Mail via the share sheet.
+      if (created?.code) {
+        await shareInvite({ code: created.code, clientName, artistName: user?.displayName, message: note });
+      }
       setConfirmation(clientName);
       setName('');
       setContact('');
@@ -62,6 +73,8 @@ export default function InviteClient() {
       setTimeout(() => setConfirmation(null), 3500);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Failed to send invite. Please try again.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -88,7 +101,7 @@ export default function InviteClient() {
             lineHeight: 20,
           }}
         >
-          They&apos;ll get a personalized link to download the app and start sending you looks.
+          Create an invite, then send it by WhatsApp, text or email. They&apos;ll get a link and a code to connect with you.
         </RNText>
       </View>
 
@@ -114,7 +127,7 @@ export default function InviteClient() {
                 flex: 1,
               }}
             >
-              Invite sent to {confirmation}
+              Invite for {confirmation} is ready. You can share it again below.
             </RNText>
           </Row>
         </View>
@@ -185,9 +198,9 @@ export default function InviteClient() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Send invite"
-            accessibilityState={{ disabled: !canSend }}
+            accessibilityState={{ disabled: !canSend || sending }}
             android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
-            disabled={!canSend}
+            disabled={!canSend || sending}
             onPress={() => { void onSend(); }}
             style={({ pressed }) => ({
               backgroundColor: canSend ? (pressed ? '#B5634F' : V.accent) : V.muted,
@@ -205,7 +218,7 @@ export default function InviteClient() {
                 letterSpacing: 0.2,
               }}
             >
-              Send invite
+              {sending ? 'Creating invite…' : 'Create & share invite'}
             </RNText>
           </Pressable>
 
@@ -240,7 +253,7 @@ export default function InviteClient() {
           </RNText>
           <Stack gap={tokens.spacing[3]}>
             {invites.slice(0, 8).map((inv) => (
-              <InviteRow key={inv.id} invite={inv} />
+              <InviteRow key={inv.id} invite={inv} artistName={user?.displayName} />
             ))}
           </Stack>
         </View>
@@ -364,8 +377,12 @@ function ChannelChip({
   );
 }
 
-function InviteRow({ invite }: { invite: Invite }) {
+function InviteRow({ invite, artistName }: { invite: Invite; artistName?: string }) {
   const badgeCfg = inviteBadgeConfig(invite.status);
+  const onShare = () =>
+    void shareInvite({ code: invite.code, clientName: invite.clientName, artistName, message: invite.message }).catch(() =>
+      Alert.alert("Couldn't open sharing", 'Try again in a moment.'),
+    );
   return (
     <View
       style={{
@@ -420,6 +437,11 @@ function InviteRow({ invite }: { invite: Invite }) {
             {badgeCfg.label}
           </RNText>
         </View>
+        {invite.status === 'sent' && invite.code ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={`Share invite for ${invite.clientName}`} hitSlop={8} onPress={onShare}>
+            <Ionicons name="share-outline" size={20} color={V.accent} />
+          </Pressable>
+        ) : null}
       </Row>
     </View>
   );

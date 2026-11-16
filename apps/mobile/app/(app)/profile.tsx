@@ -57,6 +57,14 @@ export default function Profile() {
   );
 
   const settings: SettingRow[] = [
+    ...(role === 'client'
+      ? [{
+          icon: 'ticket-outline' as const,
+          label: 'Have an invite code?',
+          caption: 'Connect with your makeup artist',
+          onPress: () => router.push('/(app)/join'),
+        }]
+      : []),
     { icon: 'notifications-outline', label: 'Notifications', caption: 'Routine reminders, drops' },
     { icon: 'lock-closed-outline', label: 'Privacy', caption: 'Data & permissions' },
     { icon: 'card-outline', label: 'Payment methods' },

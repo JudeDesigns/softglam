@@ -13,7 +13,7 @@ from app.modules.appointments.schemas import (
     AppointmentRead,
     AppointmentUpdate,
 )
-from app.modules.users.models import UserRole
+from app.modules.users.models import User, UserRole
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
@@ -33,16 +33,32 @@ def _serialize_product(p: AppointmentProduct) -> AppointmentProductRead:
 
 
 async def _serialize(
-    appt: Appointment, session: DbSession
+    appt: Appointment, session: DbSession, viewer: CurrentUser
 ) -> AppointmentRead:
-    products = (
-        await session.execute(
-            select(AppointmentProduct).where(
-                AppointmentProduct.appointment_id == appt.id
+    # Product usage and unit costs are the artist's private business data
+    # (their COGS and margin) — never send them to the client.
+    if viewer.role == UserRole.client:
+        products = []
+    else:
+        products = (
+            await session.execute(
+                select(AppointmentProduct).where(
+                    AppointmentProduct.appointment_id == appt.id
+                )
             )
-        )
-    ).scalars().all()
+        ).scalars().all()
+    names = dict(
+        (
+            await session.execute(
+                select(User.id, User.display_name).where(
+                    User.id.in_([appt.client_id, appt.artist_id])
+                )
+            )
+        ).all()
+    )
     return AppointmentRead(
+        client_name=names.get(appt.client_id, ""),
+        artist_name=names.get(appt.artist_id, ""),
         id=appt.id,
         artist_id=appt.artist_id,
         client_id=appt.client_id,
@@ -61,6 +77,20 @@ async def _serialize(
         cancelled_at=appt.cancelled_at,
         products=[_serialize_product(p) for p in products],
     )
+
+
+# Statuses each action may move an appointment out of.
+_CAN_CONFIRM = {AppointmentStatus.booked}
+_CAN_COMPLETE = {AppointmentStatus.booked, AppointmentStatus.confirmed}
+_CAN_CANCEL = {AppointmentStatus.booked, AppointmentStatus.confirmed}
+
+
+def _require_status(appt: Appointment, allowed: set[AppointmentStatus], action: str) -> None:
+    if appt.status not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Can't {action} an appointment that is {AppointmentStatus(appt.status).value}",
+        )
 
 
 def _require_artist_or_admin(user: CurrentUser) -> None:
@@ -118,7 +148,7 @@ async def list_appointments(
 
     q = q.order_by(Appointment.scheduled_at).offset(skip).limit(limit)
     rows = (await session.execute(q)).scalars().all()
-    return [await _serialize(r, session) for r in rows]
+    return [await _serialize(r, session, user) for r in rows]
 
 
 @router.post("", response_model=AppointmentRead, status_code=status.HTTP_201_CREATED)
@@ -126,6 +156,11 @@ async def create_appointment(
     payload: AppointmentCreate, user: CurrentUser, session: DbSession
 ) -> AppointmentRead:
     _require_artist_or_admin(user)
+    booked_client = (
+        await session.execute(select(User).where(User.id == payload.client_id))
+    ).scalar_one_or_none()
+    if booked_client is None or booked_client.role != UserRole.client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
     appt = Appointment(
         artist_id=user.id,
         **payload.model_dump(),
@@ -133,7 +168,7 @@ async def create_appointment(
     session.add(appt)
     await session.commit()
     await session.refresh(appt)
-    return await _serialize(appt, session)
+    return await _serialize(appt, session, user)
 
 
 @router.get("/{appointment_id}", response_model=AppointmentRead)
@@ -141,7 +176,7 @@ async def get_appointment(
     appointment_id: UUID, user: CurrentUser, session: DbSession
 ) -> AppointmentRead:
     appt = await _get_appt_for_user(appointment_id, user, session)
-    return await _serialize(appt, session)
+    return await _serialize(appt, session, user)
 
 
 @router.patch("/{appointment_id}", response_model=AppointmentRead)
@@ -160,7 +195,7 @@ async def update_appointment(
     session.add(appt)
     await session.commit()
     await session.refresh(appt)
-    return await _serialize(appt, session)
+    return await _serialize(appt, session, user)
 
 
 @router.post("/{appointment_id}/confirm", response_model=AppointmentRead)
@@ -169,12 +204,13 @@ async def confirm_appointment(
 ) -> AppointmentRead:
     _require_artist_or_admin(user)
     appt = await _get_appt_for_user(appointment_id, user, session)
+    _require_status(appt, _CAN_CONFIRM, "confirm")
     appt.status = AppointmentStatus.confirmed
     appt.updated_at = datetime.now(UTC)
     session.add(appt)
     await session.commit()
     await session.refresh(appt)
-    return await _serialize(appt, session)
+    return await _serialize(appt, session, user)
 
 
 @router.post("/{appointment_id}/complete", response_model=AppointmentRead)
@@ -183,6 +219,7 @@ async def complete_appointment(
 ) -> AppointmentRead:
     _require_artist_or_admin(user)
     appt = await _get_appt_for_user(appointment_id, user, session)
+    _require_status(appt, _CAN_COMPLETE, "complete")
     now = datetime.now(UTC)
     appt.status = AppointmentStatus.completed
     appt.completed_at = now
@@ -190,7 +227,7 @@ async def complete_appointment(
     session.add(appt)
     await session.commit()
     await session.refresh(appt)
-    return await _serialize(appt, session)
+    return await _serialize(appt, session, user)
 
 
 @router.post("/{appointment_id}/cancel", response_model=AppointmentRead)
@@ -198,6 +235,7 @@ async def cancel_appointment(
     appointment_id: UUID, user: CurrentUser, session: DbSession
 ) -> AppointmentRead:
     appt = await _get_appt_for_user(appointment_id, user, session)
+    _require_status(appt, _CAN_CANCEL, "cancel")
     now = datetime.now(UTC)
     appt.status = AppointmentStatus.cancelled
     appt.cancelled_at = now
@@ -205,7 +243,7 @@ async def cancel_appointment(
     session.add(appt)
     await session.commit()
     await session.refresh(appt)
-    return await _serialize(appt, session)
+    return await _serialize(appt, session, user)
 
 
 # ---------------------------------------------------------------------------

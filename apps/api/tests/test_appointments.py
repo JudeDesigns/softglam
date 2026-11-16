@@ -263,3 +263,91 @@ async def test_remove_product_from_appointment(client):
     )
     assert summary.json()["total_cogs"] == 0.0
     assert len(summary.json()["products"]) == 0
+
+
+async def test_client_never_sees_artist_product_costs(client):
+    artist = await sign_up(client, "artist-c@example.com", "artist")
+    client_user = await sign_up(client, "client-c@example.com", "client")
+    created = await client.post(
+        "/api/v1/appointments",
+        headers=auth(token_of(artist)),
+        json=_appt_payload(user_id_of(client_user)),
+    )
+    appt_id = created.json()["id"]
+    added = await client.post(
+        f"/api/v1/appointments/{appt_id}/products",
+        headers=auth(token_of(artist)),
+        json={"product_name": "Foundation", "brand": "MAC", "quantity": 2, "unit_cost": 1800},
+    )
+    assert added.status_code == 201, added.text
+
+    as_artist = await client.get(f"/api/v1/appointments/{appt_id}", headers=auth(token_of(artist)))
+    assert len(as_artist.json()["products"]) == 1
+
+    client_tok = token_of(client_user)
+    one = await client.get(f"/api/v1/appointments/{appt_id}", headers=auth(client_tok))
+    assert one.status_code == 200
+    assert one.json()["products"] == []
+    listing = await client.get("/api/v1/appointments", headers=auth(client_tok))
+    assert all(a["products"] == [] for a in listing.json())
+    summary = await client.get(f"/api/v1/appointments/{appt_id}/cogs-summary", headers=auth(client_tok))
+    assert summary.status_code == 403
+
+
+async def test_appointment_needs_a_real_client(client):
+    artist = await sign_up(client, "artist-x@example.com", "artist")
+    other_artist = await sign_up(client, "artist-y@example.com", "artist")
+    for bad_id in [user_id_of(other_artist), "00000000-0000-0000-0000-000000000000"]:
+        res = await client.post(
+            "/api/v1/appointments", headers=auth(token_of(artist)), json=_appt_payload(bad_id)
+        )
+        assert res.status_code == 404
+
+
+async def _booked(client):
+    artist = await sign_up(client, "artist-s@example.com", "artist", display_name="Amara")
+    client_user = await sign_up(client, "client-s@example.com", "client", display_name="Zara")
+    res = await client.post(
+        "/api/v1/appointments",
+        headers=auth(token_of(artist)),
+        json=_appt_payload(user_id_of(client_user)),
+    )
+    return res.json(), token_of(artist), token_of(client_user)
+
+
+async def test_appointment_carries_names(client):
+    appt, _, _ = await _booked(client)
+    assert appt["client_name"] == "Zara"
+    assert appt["artist_name"] == "Amara"
+
+
+async def test_status_changes_follow_the_lifecycle(client):
+    appt, artist_tok, client_tok = await _booked(client)
+    base = f"/api/v1/appointments/{appt['id']}"
+    assert (await client.post(f"{base}/confirm", headers=auth(artist_tok))).status_code == 200
+    assert (await client.post(f"{base}/confirm", headers=auth(artist_tok))).status_code == 409
+    assert (await client.post(f"{base}/complete", headers=auth(artist_tok))).status_code == 200
+    # Completed appointments can't be cancelled or completed again.
+    assert (await client.post(f"{base}/cancel", headers=auth(client_tok))).status_code == 409
+    assert (await client.post(f"{base}/complete", headers=auth(artist_tok))).status_code == 409
+
+
+async def test_cancelled_appointment_cannot_be_completed(client):
+    appt, artist_tok, client_tok = await _booked(client)
+    base = f"/api/v1/appointments/{appt['id']}"
+    assert (await client.post(f"{base}/cancel", headers=auth(client_tok))).status_code == 200
+    assert (await client.post(f"{base}/complete", headers=auth(artist_tok))).status_code == 409
+
+
+async def test_negative_costs_rejected(client):
+    appt, artist_tok, _ = await _booked(client)
+    res = await client.post(
+        f"/api/v1/appointments/{appt['id']}/products",
+        headers=auth(artist_tok),
+        json={"product_name": "Primer", "brand": "X", "quantity": 1, "unit_cost": -5},
+    )
+    assert res.status_code == 422
+    res = await client.patch(
+        f"/api/v1/appointments/{appt['id']}", headers=auth(artist_tok), json={"final_price": -1}
+    )
+    assert res.status_code == 422

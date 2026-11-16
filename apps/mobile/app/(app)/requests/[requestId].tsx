@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,9 +7,11 @@ import { tokens } from '@softglow/tokens';
 import { Avatar, IconButton, Row, Screen, Stack } from '@softglow/ui';
 
 import { MakeupPreview } from '@/try-on/components';
-import { findLook } from '@/try-on/looks';
+import { RequestVisuals } from '@/look-share/components';
+import { useLook } from '@/state/looks';
 import { useArtists } from '@/state/artists';
 import { useLookRequests, type LookRequestStatus } from '@/state/look-requests';
+import { formatDateTime, formatMoney } from '@/lib/format';
 
 // ─── Vanity palette (communication screens) ──────────────────────────────────
 const V = {
@@ -37,10 +39,12 @@ const PREVIEW_INTENSITIES = { lip: 0.85, cheek: 0.65, eye: 0.7, brow: 0.45 };
 export default function ClientRequestDetail() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const request = useLookRequests((s) => s.requests.find((r) => r.id === requestId));
-  const look = useMemo(() => (request ? findLook(request.lookId) : undefined), [request]);
+  const look = useLook(request?.lookId);
   const findById = useArtists((s) => s.findById);
   const artist = request ? findById(request.artistId) : undefined;
   const insets = useSafeAreaInsets();
+  const accept = useLookRequests((s) => s.accept);
+  const [accepting, setAccepting] = useState(false);
 
   if (!request) {
     return (
@@ -60,6 +64,31 @@ export default function ClientRequestDetail() {
       </Screen>
     );
   }
+
+  const canAccept = request.status === 'quoted' && !!request.proposedAt;
+
+  const onAccept = () => {
+    const when = request.proposedAt ? formatDateTime(request.proposedAt) : '';
+    Alert.alert('Book this appointment?', [when, request.quotedPrice !== undefined ? formatMoney(request.quotedPrice) : ''].filter(Boolean).join(' · '), [
+      { text: 'Not yet', style: 'cancel' },
+      {
+        text: 'Book',
+        onPress: async () => {
+          setAccepting(true);
+          try {
+            await accept(request.id);
+          } catch (err) {
+            Alert.alert(
+              "Couldn't book",
+              err instanceof Error && err.message ? err.message : 'Check your connection and try again.',
+            );
+          } finally {
+            setAccepting(false);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <Screen scroll={false} padding={0} style={{ backgroundColor: V.bg }}>
@@ -212,6 +241,11 @@ export default function ClientRequestDetail() {
           </View>
         ) : null}
 
+        {/* ── What you sent: preview, your photo, recipe ───────────────────── */}
+        <View style={{ marginTop: tokens.spacing[6] }}>
+          <RequestVisuals request={request} beforeLabel="Your photo" />
+        </View>
+
         {/* ── Timeline ────────────────────────────────────────────────────── */}
         <View style={{ marginTop: tokens.spacing[6] }}>
           <RNText
@@ -249,7 +283,7 @@ export default function ClientRequestDetail() {
             <TimelineRow
               label={request.status === 'declined' ? 'Artist declined' : 'Reply received'}
               caption={replyCaption(request.status, request.quote)}
-              done={request.status === 'quoted' || request.status === 'declined'}
+              done={request.status === 'quoted' || request.status === 'declined' || request.status === 'accepted'}
               isLast
               tone={request.status === 'declined' ? 'danger' : 'accent'}
             />
@@ -306,7 +340,7 @@ export default function ClientRequestDetail() {
                 marginBottom: tokens.spacing[2],
               }}
             >
-              ARTIST&apos;S REPLY
+              {request.status === 'accepted' ? 'YOUR BOOKING' : 'ARTIST\u2019S QUOTE'}
             </RNText>
             <View
               style={{
@@ -315,17 +349,37 @@ export default function ClientRequestDetail() {
                 borderColor: V.accent + '55',
                 borderRadius: tokens.radii.lg,
                 padding: tokens.spacing[4],
+                gap: tokens.spacing[2],
               }}
             >
-              <RNText
-                style={{
-                  fontFamily: 'Inter_600SemiBold',
-                  fontSize: 15,
-                  color: V.textPrimary,
-                }}
-              >
-                {request.quote}
-              </RNText>
+              {request.quotedPrice !== undefined && (
+                <RNText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 22, color: V.textPrimary }}>
+                  {formatMoney(request.quotedPrice)}
+                </RNText>
+              )}
+              {request.proposedAt && (
+                <Row gap={tokens.spacing[2]} align="center">
+                  <Ionicons name="calendar-outline" size={16} color={V.accent} />
+                  <RNText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: V.textPrimary }}>
+                    {formatDateTime(request.proposedAt)}
+                  </RNText>
+                </Row>
+              )}
+              {request.quotedPrice === undefined && !request.proposedAt && (
+                <RNText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: V.textPrimary }}>
+                  {request.quote}
+                </RNText>
+              )}
+              {request.status === 'accepted' && (
+                <RNText style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: V.textMeta }}>
+                  Booked with {request.artistName || artist?.name || 'your artist'}. They&apos;ll confirm the details.
+                </RNText>
+              )}
+              {request.status === 'quoted' && !request.proposedAt && (
+                <RNText style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: V.textMeta }}>
+                  Waiting for your artist to propose a time before you can book.
+                </RNText>
+              )}
             </View>
           </View>
         ) : null}
@@ -347,12 +401,22 @@ export default function ClientRequestDetail() {
           gap: tokens.spacing[3],
         }}
       >
-        <VanityButton
-          label="Send another look"
-          variant="primary"
-          fullWidth
-          onPress={() => router.replace('/(app)/look-share')}
-        />
+        {canAccept ? (
+          <VanityButton
+            label={accepting ? 'Booking…' : `Accept & book${request.quotedPrice !== undefined ? ` · ${formatMoney(request.quotedPrice)}` : ''}`}
+            variant="primary"
+            fullWidth
+            disabled={accepting}
+            onPress={onAccept}
+          />
+        ) : (
+          <VanityButton
+            label="Send another look"
+            variant="primary"
+            fullWidth
+            onPress={() => router.replace('/(app)/look-share')}
+          />
+        )}
         <VanityButton
           label="Back to requests"
           variant="secondary"
@@ -365,6 +429,7 @@ export default function ClientRequestDetail() {
 }
 
 function replyCaption(status: LookRequestStatus, quote?: string): string {
+  if (status === 'accepted') return 'Booked';
   if (status === 'quoted' && quote) return quote;
   if (status === 'declined') return 'The artist isn\u2019t able to take this on right now.';
   return 'You\u2019ll get a notification when the artist replies.';

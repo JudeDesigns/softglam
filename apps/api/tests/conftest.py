@@ -43,7 +43,20 @@ async def client(session_factory) -> AsyncIterator[AsyncClient]:
             yield session
 
     app.dependency_overrides[get_session] = _override_session
+    from tests import helpers
+
+    helpers.SESSION_FACTORY = session_factory
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def media_dir(tmp_path, monkeypatch):
+    """Point photo storage at a per-test temp folder."""
+    from app.core.config import get_settings
+
+    path = tmp_path / "media"
+    monkeypatch.setattr(get_settings(), "media_dir", str(path))
+    return path

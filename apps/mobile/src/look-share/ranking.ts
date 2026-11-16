@@ -1,5 +1,5 @@
 import type { SkinProfile, SkinConcern, SkinType } from '@softglow/types';
-import { LOOK_SECTIONS, type LookSection, type MakeupLook } from '@/try-on/looks';
+import type { LookSection, MakeupLook } from '@/try-on/looks';
 
 /**
  * Per-look affinity tags. Keeps the look data untouched — when the backend
@@ -63,8 +63,11 @@ function scoreLook(look: MakeupLook, profile: SkinProfile | null): number {
  * so the catalog stays predictable, but the strongest match within each
  * section bubbles up.
  */
-export function rankSectionsForProfile(profile: SkinProfile | null): LookSection[] {
-  return LOOK_SECTIONS.map((section) => ({
+export function rankSectionsForProfile(
+  sections: LookSection[],
+  profile: SkinProfile | null,
+): LookSection[] {
+  return sections.map((section) => ({
     ...section,
     looks: [...section.looks]
       .map((l) => ({ look: l, score: scoreLook(l, profile) }))
@@ -74,8 +77,12 @@ export function rankSectionsForProfile(profile: SkinProfile | null): LookSection
 }
 
 /** Top-N looks across all sections, sorted by relevance. For the home zone preview. */
-export function topLooksForProfile(profile: SkinProfile | null, n = 4): RankedLook[] {
-  const flat = LOOK_SECTIONS.flatMap((s) => s.looks).map((l) => ({
+export function topLooksForProfile(
+  sections: LookSection[],
+  profile: SkinProfile | null,
+  n = 4,
+): RankedLook[] {
+  const flat = sections.flatMap((s) => s.looks).map((l) => ({
     ...l,
     matchScore: scoreLook(l, profile),
   }));

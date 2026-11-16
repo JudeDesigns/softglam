@@ -66,3 +66,16 @@ async def test_duplicate_email_is_rejected(client):
     assert first.status_code == 201
     second = await client.post("/api/v1/auth/sign-up", json=payload)
     assert second.status_code == 409
+
+
+async def test_cannot_sign_up_as_admin(client):
+    res = await client.post(
+        "/api/v1/auth/sign-up",
+        json={
+            "email": "sneaky@example.com",
+            "password": "verysecret1",
+            "display_name": "Sneaky",
+            "role": "admin",
+        },
+    )
+    assert res.status_code == 422

@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 import {
+  apiAddAppointmentProduct,
   apiCancelAppointment,
+  apiGetAppointment,
+  apiRemoveAppointmentProduct,
   apiCompleteAppointment,
   apiConfirmAppointment,
   apiCreateAppointment,
   apiListAppointments,
   apiUpdateAppointment,
   type AppointmentCreateInput,
+  type AppointmentProductInput,
   type AppointmentUpdateInput,
 } from '@/api/appointments';
 import type { ApiAppointment } from '@/api/types';
@@ -22,6 +26,10 @@ interface AppointmentsState {
   confirm: (id: string) => Promise<void>;
   complete: (id: string) => Promise<void>;
   cancel: (id: string) => Promise<void>;
+  /** Re-fetch one appointment (e.g. after a quote is accepted). */
+  refresh: (id: string) => Promise<void>;
+  addProduct: (id: string, input: AppointmentProductInput) => Promise<void>;
+  removeProduct: (id: string, productId: string) => Promise<void>;
 
   reset: () => void;
 }
@@ -73,6 +81,21 @@ export const useAppointments = create<AppointmentsState>((set, get) => ({
   cancel: async (id) => {
     const updated = await apiCancelAppointment(id);
     set((s) => ({ appointments: upsert(s.appointments, updated) }));
+  },
+
+  refresh: async (id) => {
+    const updated = await apiGetAppointment(id);
+    set((s) => ({ appointments: upsert(s.appointments, updated) }));
+  },
+
+  addProduct: async (id, input) => {
+    await apiAddAppointmentProduct(id, input);
+    await get().refresh(id);
+  },
+
+  removeProduct: async (id, productId) => {
+    await apiRemoveAppointmentProduct(id, productId);
+    await get().refresh(id);
   },
 
   reset: () => set({ appointments: [] }),

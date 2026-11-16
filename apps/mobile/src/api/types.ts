@@ -40,7 +40,18 @@ export interface ApiArtist {
   bio: string | null;
 }
 
-export type ApiLookRequestStatus = 'pending' | 'viewed' | 'quoted' | 'declined';
+export type FeatureKey = 'brows' | 'eyeshadow' | 'liner' | 'blush' | 'contour' | 'lips';
+
+export interface FeatureSetting {
+  /** Index into the inspiration photos: 0 = Look A, 1 = Look B, 2 = Look C. */
+  source: number;
+  /** 0–1. 0 means the feature is off. */
+  intensity: number;
+}
+
+export type Recipe = Partial<Record<FeatureKey, FeatureSetting>>;
+
+export type ApiLookRequestStatus = 'pending' | 'viewed' | 'quoted' | 'declined' | 'accepted';
 
 export interface ApiLookRequest {
   id: string;
@@ -51,9 +62,19 @@ export interface ApiLookRequest {
   look_caption: string;
   client_photo_url: string;
   generated_url: string;
+  /** "Copy a look" requests only: inspiration photos (A, B, C) and the recipe. */
+  reference_urls?: string[] | null;
+  recipe?: Recipe | null;
   message: string | null;
   status: ApiLookRequestStatus;
   quote: string | null;
+  quoted_price?: number | null;
+  /** ISO time the artist proposed; required for the client to accept. */
+  proposed_at?: string | null;
+  /** Set once the client accepts and the booking is created. */
+  appointment_id?: string | null;
+  client_name?: string;
+  artist_name?: string;
   created_at: string;
   viewed_at: string | null;
   responded_at: string | null;
@@ -133,5 +154,8 @@ export interface ApiAppointment {
   updated_at: string;
   completed_at: string | null;
   cancelled_at: string | null;
+  client_name?: string;
+  artist_name?: string;
+  /** Empty for clients — product costs are the artist's private data. */
   products: ApiAppointmentProduct[];
 }
