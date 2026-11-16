@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { tokens } from '@softglow/tokens';
 import { useSession } from '@/state/session';
 

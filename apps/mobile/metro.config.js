@@ -23,8 +23,8 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// pnpm uses symlinks heavily; Metro needs this to follow them.
-config.resolver.unstable_enableSymlinks = true;
+// pnpm uses symlinks heavily; Metro follows them by default (no
+// unstable_enableSymlinks needed since SDK 50+, and expo-doctor flags it).
 config.resolver.disableHierarchicalLookup = false;
 
 // react-native-svg ships "react-native": "src/index.ts" (raw TS source).
