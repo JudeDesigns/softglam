@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -17,9 +15,9 @@ router = APIRouter(prefix="/products", tags=["products"])
 async def list_products(
     _user: CurrentUser,
     session: DbSession,
-    brand: Optional[str] = Query(None),
-    concern: Optional[str] = Query(None, description="Filter by skin concern target"),
-    toxin_free: Optional[bool] = Query(None),
+    brand: str | None = Query(None),
+    concern: str | None = Query(None, description="Filter by skin concern target"),
+    toxin_free: bool | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ) -> list[ProductRead]:

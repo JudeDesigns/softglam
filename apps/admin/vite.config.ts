@@ -19,6 +19,11 @@ export default defineConfig({
         target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8000',
         changeOrigin: true,
       },
+      // Uploaded photos / AI results stored by the API (relative /media/... URLs).
+      '/media': {
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 });

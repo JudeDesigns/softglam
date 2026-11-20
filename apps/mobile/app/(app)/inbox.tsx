@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text as RNText, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text as RNText, View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';
@@ -42,6 +43,7 @@ export default function ArtistInbox() {
       viewed: 0,
       quoted: 0,
       declined: 0,
+      accepted: 0,
     };
     for (const r of requests) acc[r.status] += 1;
     return acc;
@@ -252,6 +254,7 @@ function badgeConfigFor(status: LookRequestStatus): { bg: string; text: string }
     case 'viewed':   return { bg: V.sunken,            text: V.textMeta };
     case 'quoted':   return { bg: V.sage + '33',       text: '#4A6240' };
     case 'declined': return { bg: V.danger + '22',     text: V.danger };
+    case 'accepted': return { bg: V.sage + '55',       text: '#3A5230' };
   }
 }
 

@@ -8,12 +8,16 @@ import {
   type ReactNode,
 } from 'react';
 import type { UserRole } from '@softglow/types';
-import { clearTokens, getAccessToken, setTokens } from '@/api/client';
+import * as SecureStore from 'expo-secure-store';
+import { ApiError, clearTokens, getAccessToken, setTokens } from '@/api/client';
 import { apiGetMe, apiSignIn, apiSignUp, type SignInInput, type SignUpInput } from '@/api/auth';
 import { useSkinProfile } from './skin-profile';
 import { useLookRequests } from './look-requests';
 import { useInvites } from './invites';
 import { useArtists } from './artists';
+import { useLookCatalog } from './looks';
+import { useAppointments } from './appointments';
+import { useLookDrafts } from './look-drafts';
 
 export interface SessionUser {
   id: string;
@@ -35,19 +39,43 @@ interface SessionState {
 
 const SessionContext = createContext<SessionState | undefined>(undefined);
 
+// Last signed-in user, so a flaky network at launch doesn't log people out.
+const USER_KEY = 'softglow.user';
+
+async function cacheUser(user: SessionUser | null): Promise<void> {
+  if (user) await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+  else await SecureStore.deleteItemAsync(USER_KEY);
+}
+
+async function cachedUser(): Promise<SessionUser | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(USER_KEY);
+    return raw ? (JSON.parse(raw) as SessionUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Only an explicit "your login is no longer valid" from the server ends the session. */
+function isAuthRejection(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 401 || err.status === 403);
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   function syncStores(role: UserRole) {
-    // Always fetch artists (needed for both roles).
+    // Always fetch artists and the look catalog (needed for both roles).
     void useArtists.getState().fetch();
+    void useLookCatalog.getState().fetch();
     // Fetch user-specific data.
     void useSkinProfile.getState().fetchFromApi();
     void useLookRequests.getState().fetchFromApi();
     if (role === 'artist') {
       void useInvites.getState().fetchFromApi();
+      void useAppointments.getState().fetchFromApi();
     }
   }
 
@@ -67,11 +95,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             role: me.role,
           };
           setUser(sessionUser);
+          void cacheUser(sessionUser);
           // Hydrate stores in the background.
           void syncStores(me.role);
         }
-      } catch {
-        await clearTokens();
+      } catch (err) {
+        if (isAuthRejection(err)) {
+          await clearTokens();
+          await cacheUser(null);
+        } else {
+          // Server unreachable (offline, restarting): stay signed in with the
+          // last known user; screens show cached data and retry later.
+          const last = await cachedUser();
+          if (last && !cancelled) setUser(last);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -85,12 +122,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const res = await apiSignIn(input);
       await setTokens(res.tokens.access_token, res.tokens.refresh_token);
-      setUser({
+      const sessionUser = {
         id: res.user.id,
         email: res.user.email,
         displayName: res.user.display_name,
         role: res.user.role,
-      });
+      };
+      setUser(sessionUser);
+      void cacheUser(sessionUser);
       void syncStores(res.user.role);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Sign-in failed';
@@ -107,12 +146,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const res = await apiSignUp(input);
       await setTokens(res.tokens.access_token, res.tokens.refresh_token);
-      setUser({
+      const sessionUser = {
         id: res.user.id,
         email: res.user.email,
         displayName: res.user.display_name,
         role: res.user.role,
-      });
+      };
+      setUser(sessionUser);
+      void cacheUser(sessionUser);
       void syncStores(res.user.role);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Sign-up failed';
@@ -125,10 +166,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await clearTokens();
+    await cacheUser(null);
     setUser(null);
     useSkinProfile.getState().signOutReset();
     useLookRequests.getState().reset();
     useInvites.getState().reset();
+    useAppointments.getState().reset();
+    useLookDrafts.getState().reset();
   }, []);
 
   const value = useMemo<SessionState>(

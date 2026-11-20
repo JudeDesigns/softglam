@@ -49,42 +49,23 @@ function apiToLocal(i: ApiInvite): Invite {
   };
 }
 
-function newLocalId(): string {
-  return `inv_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36)}`;
-}
-
 export const useInvites = create<InviteState>()(
   persist(
     (set, get) => ({
       invites: [],
       isSyncing: false,
 
+      // Throws if the server rejects or can't be reached, so the screen can say so.
       send: async (input) => {
-        const tempId = newLocalId();
-        const optimistic: Invite = {
-          ...input,
-          id: tempId,
-          status: 'sent',
-          createdAt: new Date().toISOString(),
-          code: '',
-        };
-        set((s) => ({ invites: [optimistic, ...s.invites] }));
-
-        try {
-          const created = await apiCreateInvite({
-            client_name: input.clientName,
-            contact: input.contact,
-            channel: input.channel,
-            message: input.message ?? null,
-          });
-          const real = apiToLocal(created);
-          set((s) => ({
-            invites: s.invites.map((i) => (i.id === tempId ? real : i)),
-          }));
-          return real.id;
-        } catch {
-          return tempId;
-        }
+        const created = await apiCreateInvite({
+          client_name: input.clientName,
+          contact: input.contact,
+          channel: input.channel,
+          message: input.message ?? null,
+        });
+        const real = apiToLocal(created);
+        set((s) => ({ invites: [real, ...s.invites] }));
+        return real.id;
       },
 
       fetchFromApi: async () => {

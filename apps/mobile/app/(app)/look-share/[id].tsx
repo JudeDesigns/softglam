@@ -1,26 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
   Platform,
-  Pressable,
   ScrollView,
-  TextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@softglow/tokens';
 import {
-  Avatar,
   Badge,
   Button,
   Card,
   IconButton,
-  MirrorFrame,
   Row,
   Screen,
   Stack,
@@ -28,28 +23,24 @@ import {
 } from '@softglow/ui';
 
 import { MakeupPreview } from '@/try-on/components';
-import { findLook } from '@/try-on/looks';
+import { useLook } from '@/state/looks';
 import { useArtists } from '@/state/artists';
 import { useSession } from '@/state/session';
-import type { ApiArtist } from '@/api/types';
 import { useLookRequests } from '@/state/look-requests';
+import { libraryDraftId, useLookDrafts } from '@/state/look-drafts';
+import { mediaUrl } from '@/api/client';
 import { pickPhoto } from '@/lib/photo-picker';
 import { generateLookOnPhoto, type GenerationStage, type LookValidation } from '@/look-share/generation';
 import { useSkinProfile } from '@/state/skin-profile';
-
-// ---------------------------------------------------------------------------
-// Vanity design tokens
-// ---------------------------------------------------------------------------
-const V = {
-  bg: '#FDFAF6',
-  card: '#FAF6F1',
-  cardBorder: '#E4D9CD',
-  textPrimary: '#2B211D',
-  textSecondary: '#9A8070',
-  accent: '#C97B6A',
-  plum: '#5B2A4A',
-  sand: '#E4D9CD',
-} as const;
+import {
+  ArtistRow,
+  GeneratedPreview,
+  NoteInput,
+  PhotoTile,
+  SentConfirmation,
+  StepLabel,
+  V,
+} from '@/look-share/components';
 
 type Step = 'compose' | 'sent';
 
@@ -57,7 +48,7 @@ const PREVIEW_INTENSITIES = { lip: 0.85, cheek: 0.65, eye: 0.7, brow: 0.45 };
 
 export default function LookShareDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const look = useMemo(() => (id ? findLook(id) : undefined), [id]);
+  const look = useLook(id);
 
   const { user } = useSession();
   const toneTier = useSkinProfile((s) => s.profile?.toneTier ?? null);
@@ -65,11 +56,17 @@ export default function LookShareDetail() {
   const fetchArtists = useArtists((s) => s.fetch);
   const artistsLoading = useArtists((s) => s.isLoading);
   const sendRequest = useLookRequests((s) => s.sendRequest);
+  const saveDraft = useLookDrafts((s) => s.save);
+  const removeDraft = useLookDrafts((s) => s.remove);
+  const draftId = libraryDraftId(id ?? '');
+  const existingDraft = useLookDrafts((s) => s.drafts.find((d) => d.id === draftId));
   const insets = useSafeAreaInsets();
 
   // --- State ---
   const [step, setStep] = useState<Step>('compose');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  // Stored /media path of the same photo, sent to the artist.
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
   const [stage, setStage] = useState<GenerationStage>('idle');
 
   // Result phase (after generation)
@@ -79,8 +76,42 @@ export default function LookShareDetail() {
   const [artistId, setArtistId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [sentRequestId, setSentRequestId] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => { void fetchArtists(); }, [fetchArtists]);
+
+  // Resume an unfinished look for this catalog look (from "My looks" or
+  // simply reopening it): restore the photo, preview, artist and note.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !existingDraft) return;
+    restored.current = true;
+    if (existingDraft.selfieUrl) {
+      setPhotoUri(mediaUrl(existingDraft.selfieUrl));
+      setUploadedPhotoUrl(existingDraft.selfieUrl);
+    }
+    if (existingDraft.previewUrl) {
+      setGeneratedUri(existingDraft.previewUrl);
+      setStage('ready');
+    }
+    if (existingDraft.artistId) setArtistId(existingDraft.artistId);
+    if (existingDraft.message) setMessage(existingDraft.message);
+  }, [existingDraft]);
+
+  // Keep the draft's artist and note current once there's a preview to come back to.
+  useEffect(() => {
+    if (!look || !uploadedPhotoUrl || !generatedUri || step === 'sent') return;
+    saveDraft({
+      id: draftId,
+      kind: 'library',
+      title: look.name,
+      lookId: look.id,
+      selfieUrl: uploadedPhotoUrl,
+      previewUrl: generatedUri,
+      artistId: artistId ?? undefined,
+      message: message || undefined,
+    });
+  }, [look, uploadedPhotoUrl, generatedUri, artistId, message, step, draftId, saveDraft]);
 
   useEffect(() => {
     if (artists.length > 0 && !artistId) setArtistId(artists[0]!.id);
@@ -107,6 +138,7 @@ export default function LookShareDetail() {
 
     // Reset previous generation state.
     setGeneratedUri(null);
+    setUploadedPhotoUrl(null);
     setValidation(null);
     setStage('idle');
     setPhotoUri(picked.uri);
@@ -115,12 +147,14 @@ export default function LookShareDetail() {
     try {
       const result = await generateLookOnPhoto({
         photoUri: picked.uri,
+        photoMimeType: picked.mimeType,
         look,
         toneTier,
         onStage: setStage,
       });
+      setUploadedPhotoUrl(result.uploadedPhotoUrl);
       setGeneratedUri(result.generatedUri);
-      setValidation(result.validation ?? null);
+      setValidation(result.validation);
     } catch {
       setStage('error');
       Alert.alert('Generation failed', 'Please try again.');
@@ -146,23 +180,30 @@ export default function LookShareDetail() {
     }
   };
 
-  const onSend = () => {
-    if (!photoUri || !generatedUri || !artistId) return;
+  const onSend = async () => {
+    if (!uploadedPhotoUrl || !generatedUri || !artistId || sending) return;
     const artist = artists.find((a) => a.id === artistId);
     if (!artist) return;
-    void sendRequest({
-      clientName: user?.displayName ?? 'Client',
-      clientPhotoUri: photoUri,
-      generatedUri,
-      lookId: look.id,
-      lookName: look.name,
-      lookCaption: look.caption,
-      artistId: artist.id,
-      message: message.trim() || undefined,
-    }).then((reqId) => {
+    setSending(true);
+    try {
+      const reqId = await sendRequest({
+        clientName: user?.displayName ?? 'Client',
+        clientPhotoUri: uploadedPhotoUrl,
+        generatedUri,
+        lookId: look.id,
+        lookName: look.name,
+        lookCaption: look.caption,
+        artistId: artist.id,
+        message: message.trim() || undefined,
+      });
+      removeDraft(draftId);
       setSentRequestId(reqId);
       setStep('sent');
-    });
+    } catch {
+      Alert.alert("Couldn't send your look", 'Check your connection and try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (step === 'sent') {
@@ -244,7 +285,7 @@ export default function LookShareDetail() {
         {/* Step 1: Photo */}
         <View style={{ marginTop: tokens.spacing[8] }}>
           <StepLabel step={1} title="Upload your photo" subtitle="We'll use it to show how this look looks on you." />
-          <PhotoTile photoUri={photoUri} stage={stage} onPress={onPickPhoto} />
+          <PhotoTile photoUri={photoUri} busy={stage === 'uploading'} onPress={onPickPhoto} />
         </View>
 
         {/* Inline error UI */}
@@ -302,7 +343,16 @@ export default function LookShareDetail() {
                 Your Generated Look
               </Text>
             )}
-            <GeneratedPreview stage={stage} generatedUri={generatedUri} />
+            <GeneratedPreview
+              generatedUri={generatedUri}
+              loadingLabel={
+                stage === 'validating'
+                  ? 'Checking the result…'
+                  : stage === 'ready'
+                    ? null
+                    : 'Mapping the look to your face…'
+              }
+            />
             {stage === 'ready' && validation && !validation.passed && (
               <View
                 style={{
@@ -356,35 +406,11 @@ export default function LookShareDetail() {
         {stage === 'ready' && (
           <View style={{ marginTop: tokens.spacing[8] }}>
             <StepLabel step={4} title="Add a note" subtitle="Optional — tell your artist about the occasion or how to adapt the look." />
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: V.cardBorder,
-                borderRadius: tokens.radii.lg,
-                backgroundColor: V.card,
-                paddingHorizontal: tokens.spacing[4],
-                paddingVertical: tokens.spacing[3],
-                minHeight: 96,
-                marginTop: tokens.spacing[3],
-              }}
-            >
-              <TextInput
-                value={message}
-                onChangeText={setMessage}
-                multiline
-                accessibilityLabel="Add a note for your artist"
-                placeholder="e.g. For my engagement shoot on Saturday — let's keep the lip softer."
-                placeholderTextColor={V.textSecondary}
-                style={{
-                  fontFamily: tokens.fontFamily.sans,
-                  fontSize: 15,
-                  lineHeight: 22,
-                  color: V.textPrimary,
-                  textAlignVertical: 'top',
-                  minHeight: 72,
-                }}
-              />
-            </View>
+            <NoteInput
+              value={message}
+              onChange={setMessage}
+              placeholder="e.g. For my engagement shoot on Saturday — let's keep the lip softer."
+            />
           </View>
         )}
       </ScrollView>
@@ -406,247 +432,14 @@ export default function LookShareDetail() {
           }}
         >
           <Button
-            label={canSend ? 'Send to artist' : 'Pick an artist first'}
+            label={sending ? 'Sending…' : canSend ? 'Send to artist' : 'Pick an artist first'}
             variant="primary"
             fullWidth
-            disabled={!canSend}
-            onPress={onSend}
+            disabled={!canSend || sending}
+            onPress={() => void onSend()}
           />
         </View>
       )}
-    </Screen>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function StepLabel({ step, title, subtitle }: { step: number; title: string; subtitle: string }) {
-  return (
-    <View style={{ marginBottom: tokens.spacing[4] }}>
-      <Text variant="caption" weight="medium" style={{ color: V.textSecondary, letterSpacing: 1 }}>
-        STEP {step}
-      </Text>
-      <Text variant="heading" style={{ marginTop: 2, color: V.textPrimary }}>{title}</Text>
-      <Text variant="bodySm" style={{ marginTop: 2, color: V.textSecondary }}>{subtitle}</Text>
-    </View>
-  );
-}
-
-function PhotoTile({
-  photoUri,
-  stage,
-  onPress,
-}: {
-  photoUri: string | null;
-  stage: GenerationStage;
-  onPress: () => void;
-}) {
-  const uploading = stage === 'uploading';
-  const filled = !!photoUri;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={photoUri ? 'Change photo' : 'Add a photo'}
-      onPress={onPress}
-      disabled={uploading}
-      style={({ pressed }) => ({
-        borderWidth: filled ? 0 : 1.5,
-        borderStyle: 'dashed',
-        borderColor: V.cardBorder,
-        borderRadius: tokens.radii.xl,
-        backgroundColor: filled ? V.textPrimary : V.card,
-        paddingVertical: tokens.spacing[8],
-        paddingHorizontal: tokens.spacing[5],
-        alignItems: 'center',
-        opacity: pressed ? 0.92 : 1,
-        overflow: 'hidden',
-      })}
-    >
-      {uploading ? (
-        <Stack gap={tokens.spacing[2]} align="center">
-          <ActivityIndicator color={V.accent} />
-          <Text variant="bodySm" style={{ color: V.textSecondary }}>Uploading…</Text>
-        </Stack>
-      ) : filled ? (
-        <Stack gap={tokens.spacing[2]} align="center">
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: 120, height: 160, borderRadius: tokens.radii.lg }}
-            contentFit="cover"
-          />
-          <Text variant="caption" tone="onHero" style={{ opacity: 0.7, marginTop: 4 }}>Tap to change photo</Text>
-        </Stack>
-      ) : (
-        <Stack gap={tokens.spacing[2]} align="center">
-          <Ionicons name="camera-outline" size={32} color={V.accent} />
-          <Text variant="bodySm" weight="semibold" style={{ color: V.textPrimary }}>Tap to add a photo</Text>
-          <Text variant="caption" style={{ color: V.textSecondary }}>Selfie or library</Text>
-        </Stack>
-      )}
-    </Pressable>
-  );
-}
-
-function GeneratedPreview({
-  stage,
-  generatedUri,
-}: {
-  stage: GenerationStage;
-  generatedUri: string | null;
-}) {
-  if (stage === 'uploading' || stage === 'generating' || stage === 'validating') {
-    return (
-      <View
-        style={{
-          height: 260,
-          borderRadius: tokens.radii.xl,
-          backgroundColor: V.card,
-          borderWidth: 1,
-          borderColor: V.cardBorder,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: tokens.spacing[3],
-        }}
-      >
-        <ActivityIndicator color={V.accent} />
-        <Text variant="bodySm" style={{ color: V.textSecondary }}>
-          {stage === 'validating' ? 'Checking the result…' : 'Mapping the look to your face…'}
-        </Text>
-      </View>
-    );
-  }
-
-  if (!generatedUri) return null;
-
-  // MirrorFrame wraps the generated result — the ONE place it appears in the app
-  return (
-    <MirrorFrame width={280} style={{ alignSelf: 'center' }}>
-      <Image
-        source={{ uri: generatedUri }}
-        style={{ width: '100%', aspectRatio: 3 / 4 }}
-        contentFit="cover"
-      />
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 16,
-          left: 16,
-        }}
-      >
-        <Badge label="Personalised preview" tone="accent" />
-      </View>
-    </MirrorFrame>
-  );
-}
-
-function ArtistRow({
-  artist,
-  selected,
-  onPress,
-}: {
-  artist: ApiArtist;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      android_ripple={{ color: 'rgba(201,123,106,0.08)' }}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        borderWidth: 1,
-        borderColor: selected ? V.accent : V.cardBorder,
-        backgroundColor: selected ? V.plum : V.card,
-        borderRadius: tokens.radii.xl,
-        padding: tokens.spacing[4],
-        opacity: pressed ? 0.94 : 1,
-      })}
-    >
-      <Row align="center" gap={tokens.spacing[4]}>
-        <Avatar name={artist.name} size="md" />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            variant="bodySm"
-            weight="semibold"
-            tone={selected ? 'onHero' : 'primary'}
-            numberOfLines={1}
-            style={{ color: selected ? '#FDFAF6' : V.textPrimary }}
-          >
-            {artist.name}
-          </Text>
-          <Text
-            variant="caption"
-            numberOfLines={1}
-            style={{ color: selected ? 'rgba(253,250,246,0.72)' : V.textSecondary }}
-          >
-            {artist.specialty} · {artist.city}
-          </Text>
-          <Row gap={tokens.spacing[3]} align="center" style={{ marginTop: 4 }}>
-            <Row gap={4} align="center">
-              <Ionicons name="star" size={12} color={selected ? '#E4D9CD' : V.accent} />
-              <Text
-                variant="caption"
-                weight="semibold"
-                style={{ color: selected ? '#E4D9CD' : V.accent }}
-              >
-                {artist.rating.toFixed(1)}
-              </Text>
-            </Row>
-            <Text
-              variant="caption"
-              style={{ color: selected ? 'rgba(253,250,246,0.72)' : V.textSecondary }}
-            >
-              Replies in ~{artist.response_time_hours}h
-            </Text>
-          </Row>
-        </View>
-        <Ionicons
-          name={selected ? 'checkmark-circle' : 'ellipse-outline'}
-          size={22}
-          color={selected ? '#E4D9CD' : V.textSecondary}
-        />
-      </Row>
-    </Pressable>
-  );
-}
-
-function SentConfirmation({ lookName, requestId }: { lookName: string; requestId: string | null }) {
-  return (
-    <Screen style={{ backgroundColor: V.bg }}>
-      <View style={{ flex: 1, justifyContent: 'center' }}>
-        <Card surface="hero" elevation="hero" borderless padding={tokens.spacing[6]}>
-          <Stack align="center" gap={tokens.spacing[4]}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: 'rgba(201,123,106,0.18)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="paper-plane" size={28} color={V.accent} />
-            </View>
-            <Badge label="Sent" tone="accent" onHero />
-            <Text variant="title" tone="onHero" align="center">Your look is on its way</Text>
-            <Text variant="bodySm" tone="onHero" align="center" style={{ opacity: 0.86 }}>
-              {lookName} has been sent to your artist along with your personalised preview. You&apos;ll hear back soon.
-            </Text>
-            {requestId ? (
-              <Text variant="caption" tone="onHero" style={{ opacity: 0.6 }}>Ref · {requestId}</Text>
-            ) : null}
-          </Stack>
-        </Card>
-        <View style={{ marginTop: tokens.spacing[6], gap: tokens.spacing[3] }}>
-          <Button label="Browse more looks" variant="primary" fullWidth onPress={() => router.replace('/(app)/look-share')} />
-          <Button label="Back to home" variant="secondary" fullWidth onPress={() => router.replace('/(app)/home')} />
-        </View>
-      </View>
     </Screen>
   );
 }

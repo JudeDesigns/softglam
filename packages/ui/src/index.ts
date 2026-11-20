@@ -1,3 +1,5 @@
+export { Pressable } from './primitives/pressable';
+export type { PressableProps } from './primitives/pressable';
 export { Text } from './primitives/text';
 export type { TextVariant, TextTone } from './primitives/text';
 export { Screen } from './primitives/screen';

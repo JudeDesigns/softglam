@@ -111,3 +111,21 @@ async def test_artist_cannot_accept_own_invite(client):
     )
     # Artists get 403 on the accept endpoint.
     assert res.status_code == 403
+
+
+async def test_link_invite_needs_no_contact(client):
+    from tests.helpers import auth, sign_up, token_of
+
+    artist = await sign_up(client, "artist-link@example.com", "artist")
+    res = await client.post(
+        "/api/v1/invites",
+        headers=auth(token_of(artist)),
+        json={"client_name": "Zara", "contact": "", "channel": "link"},
+    )
+    assert res.status_code == 201, res.text
+    missing = await client.post(
+        "/api/v1/invites",
+        headers=auth(token_of(artist)),
+        json={"client_name": "Zara", "contact": " ", "channel": "email"},
+    )
+    assert missing.status_code == 422

@@ -1,5 +1,5 @@
 import { request } from './client';
-import type { ApiLookRequest } from './types';
+import type { ApiLookRequest, Recipe } from './types';
 
 export interface LookRequestCreateInput {
   artist_id: string;
@@ -8,11 +8,16 @@ export interface LookRequestCreateInput {
   look_caption: string;
   client_photo_url: string;
   generated_url: string;
+  reference_urls?: string[] | null;
+  recipe?: Recipe | null;
   message?: string | null;
 }
 
 export interface LookRequestQuoteInput {
   quote: string;
+  quoted_price?: number | null;
+  /** ISO datetime in the future. */
+  proposed_at?: string | null;
 }
 
 export async function apiListMyLookRequests(): Promise<ApiLookRequest[]> {
@@ -48,4 +53,9 @@ export async function apiQuoteLookRequest(
 
 export async function apiDeclineLookRequest(id: string): Promise<ApiLookRequest> {
   return request<ApiLookRequest>(`/look-requests/${id}/decline`, { method: 'POST' });
+}
+
+/** Client accepts the artist's quote; the server books the appointment. */
+export async function apiAcceptLookRequest(id: string): Promise<ApiLookRequest> {
+  return request<ApiLookRequest>(`/look-requests/${id}/accept`, { method: 'POST' });
 }

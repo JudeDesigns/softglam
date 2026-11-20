@@ -18,7 +18,7 @@ async def register_user(session: AsyncSession, payload: SignUpRequest) -> User:
     user = User(
         email=payload.email.strip().lower(),
         password_hash=hash_password(payload.password),
-        role=payload.role,
+        role=UserRole(payload.role.value),
         display_name=payload.display_name.strip(),
     )
     session.add(user)

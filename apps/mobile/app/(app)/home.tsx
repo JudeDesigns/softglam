@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Pressable,
   ScrollView,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';
@@ -31,12 +31,16 @@ import { useProducts } from '@/state/products';
 import { BAND_COPY, bandForScore } from '@/lib/skin-health';
 import { LookThumb } from '@/try-on/components';
 import { topLooksForProfile } from '@/look-share/ranking';
-import { LOOK_SECTIONS } from '@/try-on/looks';
+import { useLookSections } from '@/state/looks';
+import { useOpenDrafts } from '@/state/look-drafts';
+import { DraftRow } from '@/look-share/drafts-ui';
 import { STATUS_LABEL, useLookRequests, type LookRequest } from '@/state/look-requests';
 
 export default function Home() {
   const { role, user } = useSession();
   const profile = useSkinProfile((s) => s.profile);
+  const lookSections = useLookSections();
+  const openDrafts = useOpenDrafts();
   const onboardingSkipped = useSkinProfile((s) => s.onboardingSkipped);
   const resumeOnboarding = useSkinProfile((s) => s.resumeOnboarding);
 
@@ -112,17 +116,31 @@ export default function Home() {
 
       <SectionDivider />
 
+      {openDrafts.length > 0 && (
+        <>
+          <Zone
+            kicker="IN PROGRESS"
+            title="Finish your look"
+            caption={openDrafts.length > 1 ? `${openDrafts.length} looks waiting to be sent` : 'Pick up where you left off'}
+            action={{ label: 'My looks', onPress: () => router.push('/(app)/look-share/mine') }}
+          >
+            <DraftRow draft={openDrafts[0]!} compact />
+          </Zone>
+          <SectionDivider />
+        </>
+      )}
+
       <Zone
         kicker={profile ? 'MATCHED FOR YOU' : 'DISCOVER'}
         title={profile ? 'Looks shaped by your skin' : 'Looks for you'}
         caption={profile ? 'Tap any look to send it to your artist' : 'Curated edits, send any to an artist'}
-        action={{ label: 'See all', onPress: () => router.push('/(app)/look-share') }}
+        action={{ label: 'See all', onPress: () => router.push('/(app)/look-share/library') }}
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <Row align="start" gap={tokens.spacing[3]} style={{ paddingRight: tokens.spacing[4] }}>
             {(profile
-              ? topLooksForProfile(profile, 6)
-              : LOOK_SECTIONS.slice(0, 2).flatMap((s) => s.looks.slice(0, 3))
+              ? topLooksForProfile(lookSections, profile, 6)
+              : lookSections.slice(0, 2).flatMap((s) => s.looks.slice(0, 3))
             ).map((look) => (
               <LookThumb
                 key={look.id}

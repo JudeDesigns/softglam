@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, type PressableProps, type ViewStyle } from 'react-native';
+import { type PressableProps, type ViewStyle } from 'react-native';
+import { Pressable } from './pressable';
 import { tokens } from '@softglow/tokens';
 
 export type IconButtonVariant = 'solid' | 'soft' | 'ghost' | 'onHero';

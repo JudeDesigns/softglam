@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '@softglow/tokens';
@@ -14,7 +15,7 @@ import {
   Text,
 } from '@softglow/ui';
 import { IntensitySlider, MakeupPreview } from '@/try-on/components';
-import { LOOK_SECTIONS, findLook } from '@/try-on/looks';
+import { useLook, useLookSections } from '@/state/looks';
 
 type SourceMode = 'silhouette' | 'photo' | 'camera';
 
@@ -23,10 +24,11 @@ const DEFAULT_INTENSITIES: Intensities = { lip: 0.7, cheek: 0.55, eye: 0.6, brow
 
 export default function LookFineTune() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const look = useMemo(() => (id ? findLook(id) : undefined), [id]);
+  const look = useLook(id);
+  const sections = useLookSections();
   const section = useMemo(
-    () => LOOK_SECTIONS.find((s) => s.looks.some((l) => l.id === id)),
-    [id],
+    () => sections.find((s) => s.looks.some((l) => l.id === id)),
+    [sections, id],
   );
 
   const [intensities, setIntensities] = useState<Intensities>(DEFAULT_INTENSITIES);

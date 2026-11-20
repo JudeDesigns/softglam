@@ -44,6 +44,10 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app /app
 
+# Uploaded photos + AI results (MEDIA_DIR=media). Owned by `app` so the named
+# volume mounted here in docker-compose inherits writable permissions.
+RUN mkdir -p /app/media && chown app:app /app/media
+
 USER app
 
 EXPOSE 8000

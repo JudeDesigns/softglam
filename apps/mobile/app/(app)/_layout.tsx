@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { tokens } from '@softglow/tokens';
 import { useSession } from '@/state/session';
 
@@ -11,18 +11,20 @@ interface TabMeta { label: string; icon: IoniconName }
 
 const TAB_META: Record<string, TabMeta> = {
   home:        { label: 'Home',     icon: 'sparkles' },
-  'look-share':{ label: 'Looks',    icon: 'color-palette' },
+  // The Looks tab is the folder's index screen, so its route is 'look-share/index'.
+  'look-share/index': { label: 'Looks', icon: 'color-palette' },
   requests:    { label: 'Requests', icon: 'paper-plane' },
   inbox:       { label: 'Inbox',    icon: 'mail' },
   invite:      { label: 'Invite',   icon: 'person-add' },
   shop:        { label: 'Shop',     icon: 'bag-handle' },
+  bookings:    { label: 'Bookings', icon: 'calendar' },
   profile:     { label: 'Me',       icon: 'person-circle' },
 };
 
 /** Tabs shown per role, in display order. */
 const TABS_BY_ROLE = {
-  client: ['home', 'look-share', 'requests', 'shop', 'profile'] as const,
-  artist: ['home', 'inbox', 'shop', 'invite', 'profile'] as const,
+  client: ['home', 'look-share/index', 'requests', 'shop', 'profile'] as const,
+  artist: ['home', 'inbox', 'bookings', 'invite', 'profile'] as const,
 } as const;
 
 const SIDE_MARGIN = 16;
@@ -137,18 +139,25 @@ export default function AppLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home"       options={{ title: 'Home' }} />
-      <Tabs.Screen name="look-share" options={{ title: 'Looks',    href: role === 'artist' ? null : undefined }} />
+      <Tabs.Screen name="look-share/index" options={{ title: 'Looks', href: role === 'artist' ? null : undefined }} />
       <Tabs.Screen name="requests"   options={{ title: 'Requests', href: role === 'artist' ? null : undefined }} />
       <Tabs.Screen name="inbox"      options={{ title: 'Inbox',    href: role === 'client' ? null : undefined }} />
       <Tabs.Screen name="invite"     options={{ title: 'Invite',   href: role === 'client' ? null : undefined }} />
-      <Tabs.Screen name="shop"       options={{ title: 'Shop' }} />
+      <Tabs.Screen name="shop"       options={{ title: 'Shop',     href: role === 'artist' ? null : undefined }} />
+      <Tabs.Screen name="bookings"   options={{ title: 'Bookings', href: role === 'client' ? null : undefined }} />
       <Tabs.Screen name="profile"    options={{ title: 'Profile' }} />
       <Tabs.Screen name="try-on"     options={{ href: null }} />
       <Tabs.Screen name="scan"       options={{ href: null }} />
       <Tabs.Screen name="look/[id]"            options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="look-share/[id]"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="look-share/copy"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="look-share/library"   options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="look-share/mine"      options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="inbox/[requestId]"    options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="requests/[requestId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="bookings/[id]"        options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="join/index"           options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="join/[code]"          options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }

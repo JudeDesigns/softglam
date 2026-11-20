@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, del, get, patch, post } from '@/lib/api';
+import { ApiError, del, get, mediaUrl, patch, post } from '@/lib/api';
 import type { Look, LookFinish, LookSection } from '@/lib/types';
 import {
   Badge,
@@ -288,7 +288,7 @@ function LookCard({
     <div className="rounded-xl border border-gray-200 overflow-hidden flex flex-col">
       {look.preview_image_url ? (
         <img
-          src={look.preview_image_url}
+          src={mediaUrl(look.preview_image_url)}
           alt={look.name}
           className="w-full h-40 object-cover bg-gray-100"
         />

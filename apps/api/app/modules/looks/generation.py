@@ -9,10 +9,9 @@ import base64
 
 import httpx
 
-from app.core.config import get_settings
+from app.core.gemini import InlineImage, generate_image
 from app.modules.looks.models import Look
-
-GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
+from app.modules.media.storage import save_inline
 
 FINISH_DESCRIPTOR = {
     "matte": "a soft matte finish with no shine",
@@ -57,40 +56,11 @@ async def _load_reference_image(photo_data_url: str | None) -> tuple[str, str]:
 
 
 async def generate_look_preview(look: Look, photo_data_url: str | None = None) -> str:
-    """Calls Gemini to render `look` on a face, returning a `data:` image URL."""
-    settings = get_settings()
-    api_key = settings.gemini_api_key
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
+    """Calls Gemini to render `look` on a face and stores it, returning its /media URL.
 
+    Stored as a file rather than an inline data: URL so the catalog the app
+    downloads (and caches) stays small.
+    """
     mime_type, image_data = await _load_reference_image(photo_data_url)
-    prompt = build_preview_prompt(look)
-
-    async with httpx.AsyncClient(timeout=60) as client:
-        res = await client.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_IMAGE_MODEL}:generateContent",
-            params={"key": api_key},
-            json={
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt},
-                            {"inlineData": {"mimeType": mime_type, "data": image_data}},
-                        ]
-                    }
-                ]
-            },
-        )
-    res.raise_for_status()
-    payload = res.json()
-    parts = (
-        payload.get("candidates", [{}])[0]
-        .get("content", {})
-        .get("parts", [])
-    )
-    for part in parts:
-        inline = part.get("inlineData")
-        if inline and inline.get("data"):
-            return f"data:{inline.get('mimeType', 'image/jpeg')};base64,{inline['data']}"
-
-    raise RuntimeError("Gemini returned no image")
+    result = await generate_image([build_preview_prompt(look), InlineImage(mime_type, image_data)])
+    return save_inline(result)

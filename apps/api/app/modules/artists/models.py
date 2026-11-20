@@ -4,6 +4,8 @@ from uuid import UUID
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
+from app.core.db_types import TZDateTime
+
 
 class ArtistProfile(SQLModel, table=True):
     """One-to-one extension of `users` for accounts with role=artist.
@@ -24,5 +26,5 @@ class ArtistProfile(SQLModel, table=True):
     years_experience: int = Field(default=0, ge=0)
     bio: str | None = Field(default=None, max_length=600)
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(sa_type=TZDateTime, default_factory=lambda: datetime.now(UTC))

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { Pressable } from '@softglow/ui';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -57,6 +58,14 @@ export default function Profile() {
   );
 
   const settings: SettingRow[] = [
+    ...(role === 'client'
+      ? [{
+          icon: 'ticket-outline' as const,
+          label: 'Have an invite code?',
+          caption: 'Connect with your makeup artist',
+          onPress: () => router.push('/(app)/join'),
+        }]
+      : []),
     { icon: 'notifications-outline', label: 'Notifications', caption: 'Routine reminders, drops' },
     { icon: 'lock-closed-outline', label: 'Privacy', caption: 'Data & permissions' },
     { icon: 'card-outline', label: 'Payment methods' },

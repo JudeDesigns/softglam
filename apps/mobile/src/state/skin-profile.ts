@@ -24,6 +24,8 @@ interface SkinProfileState {
   draft: DraftProfile;
   onboardingSkipped: boolean;
   isSyncing: boolean;
+  /** True when the last save didn't reach the server; retried on next fetch. */
+  needsSync: boolean;
 
   setDraftConcernSeverity: (concern: SkinConcern, severity: SeverityLevel) => void;
   setDraftTone: (tier: SkinToneTier) => void;
@@ -70,6 +72,7 @@ export const useSkinProfile = create<SkinProfileState>()(
       draft: emptyDraft,
       onboardingSkipped: false,
       isSyncing: false,
+      needsSync: false,
 
       setDraftConcernSeverity: (concern, severity) =>
         set((state) => ({
@@ -129,11 +132,12 @@ export const useSkinProfile = create<SkinProfileState>()(
             zone_tags: draft.zoneTags,
           });
           const synced = apiProfileToLocal(apiProfile);
-          set({ profile: synced, isSyncing: false });
+          set({ profile: synced, isSyncing: false, needsSync: false });
           return synced;
         } catch {
-          // Keep the local version if the API call fails — will re-sync on next commit.
-          set({ isSyncing: false });
+          // Keep the local version so onboarding isn't lost, and push it to the
+          // server on the next sync instead of silently never saving it.
+          set({ isSyncing: false, needsSync: true });
           return localProfile;
         }
       },
@@ -141,6 +145,22 @@ export const useSkinProfile = create<SkinProfileState>()(
       resetDraft: () => set({ draft: emptyDraft }),
 
       fetchFromApi: async () => {
+        const { profile, needsSync } = get();
+        if (needsSync && profile) {
+          // A previous save failed; the phone has the newest profile.
+          try {
+            const saved = await apiUpsertMySkinProfile({
+              tone_tier: profile.toneTier,
+              skin_type: profile.type,
+              concerns: profile.concerns as Partial<Record<SkinConcern, number>>,
+              zone_tags: profile.zoneTags,
+            });
+            set({ profile: apiProfileToLocal(saved), needsSync: false });
+          } catch {
+            // Still offline — keep needsSync and try again next time.
+          }
+          return;
+        }
         try {
           const api = await apiGetMySkinProfile();
           set({ profile: apiProfileToLocal(api) });
@@ -152,7 +172,8 @@ export const useSkinProfile = create<SkinProfileState>()(
       skipOnboarding: () => set({ onboardingSkipped: true }),
       resumeOnboarding: () => set({ onboardingSkipped: false }),
 
-      signOutReset: () => set({ profile: null, draft: emptyDraft, onboardingSkipped: false }),
+      signOutReset: () =>
+        set({ profile: null, draft: emptyDraft, onboardingSkipped: false, needsSync: false }),
     }),
     {
       name: 'softglow.skin-profile.v1',
@@ -160,6 +181,7 @@ export const useSkinProfile = create<SkinProfileState>()(
       partialize: (state) => ({
         profile: state.profile,
         onboardingSkipped: state.onboardingSkipped,
+        needsSync: state.needsSync,
       }),
     },
   ),

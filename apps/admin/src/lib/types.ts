@@ -2,7 +2,7 @@
 
 export type UserRole = 'client' | 'artist' | 'admin';
 export type AppointmentStatus = 'booked' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
-export type LookRequestStatus = 'pending' | 'viewed' | 'quoted' | 'declined';
+export type LookRequestStatus = 'pending' | 'viewed' | 'quoted' | 'declined' | 'accepted';
 export type InviteStatus = 'sent' | 'accepted' | 'expired';
 
 export interface User {
@@ -51,6 +51,11 @@ export interface LookRequest {
   message: string | null;
   status: LookRequestStatus;
   quote: string | null;
+  quoted_price: number | null;
+  proposed_at: string | null;
+  appointment_id: string | null;
+  client_name: string;
+  artist_name: string;
   created_at: string;
   viewed_at: string | null;
 }
